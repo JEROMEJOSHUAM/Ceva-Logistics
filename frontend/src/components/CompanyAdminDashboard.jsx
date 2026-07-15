@@ -323,7 +323,8 @@ export default function CompanyAdminDashboard({ view }) {
   const {
     companies, verifyCompany, workers, verifyWorker, deleteWorker,
     passes, approvePassVendor, registerWorker, requestPass,
-    supervisors = [], registerSupervisor, verifySupervisor, deleteSupervisor, logs = []
+    supervisors = [], registerSupervisor, verifySupervisor, deleteSupervisor, logs = [],
+    trucks = [], drivers = [], deliveries = [],
   } = useSystem();
   const { profile } = useAuth();
 
@@ -346,12 +347,14 @@ export default function CompanyAdminDashboard({ view }) {
   const [wEmail,      setWEmail]      = useState('');
   const [wPhone,      setWPhone]      = useState('');
   const [wSupervisor, setWSupervisor] = useState('');
+  const [wPhoto,      setWPhoto]      = useState('');
   const [wMsg,        setWMsg]        = useState('');
 
   /* Supervisor form */
   const [sName,  setSName]  = useState('');
   const [sEmail, setSEmail] = useState('');
   const [sPhone, setSPhone] = useState('');
+  const [sPhoto, setSPhoto] = useState('');
   const [sMsg,   setSMsg]   = useState('');
 
   /* Gate Pass form */
@@ -362,6 +365,7 @@ export default function CompanyAdminDashboard({ view }) {
   const [passStartTime, setPassStartTime] = useState('08:00');
   const [passEndTime,   setPassEndTime]   = useState('17:00');
   const [passPurpose,   setPassPurpose]   = useState('');
+  const [passSupervisor, setPassSupervisor] = useState('');
   const [passMsg,       setPassMsg]       = useState('');
   const [selectedPass,  setSelectedPass]  = useState(null);
   const [selectedWorker, setSelectedWorker] = useState(null);
@@ -384,9 +388,10 @@ export default function CompanyAdminDashboard({ view }) {
     registerWorker(
       wName, selectedCompanyId, wSupervisor,
       wEmail || `${wName.toLowerCase().replace(/\s+/g,'_')}@vendor.com`,
-      wPhone || '+1 555-0000'
+      wPhone || '+1 555-0000',
+      wPhoto
     );
-    setWName(''); setWEmail(''); setWPhone(''); setWSupervisor('');
+    setWName(''); setWEmail(''); setWPhone(''); setWSupervisor(''); setWPhoto('');
     setWMsg('Worker registered and pending verification.');
     setTimeout(() => setWMsg(''), 4000);
   };
@@ -395,19 +400,19 @@ export default function CompanyAdminDashboard({ view }) {
     e.preventDefault();
     if (!selectedCompanyId) { setSMsg('Select a company first.'); return; }
     if (!sName || !sEmail) { setSMsg('Name and Email are required.'); return; }
-    registerSupervisor(sName, sEmail, sPhone, selectedCompanyId);
-    setSName(''); setSEmail(''); setSPhone('');
+    registerSupervisor(sName, sEmail, sPhone, selectedCompanyId, sPhoto);
+    setSName(''); setSEmail(''); setSPhone(''); setSPhoto('');
     setSMsg('Supervisor registered successfully.');
     setTimeout(() => setSMsg(''), 4000);
   };
 
   const handleRequestPass = (e) => {
     e.preventDefault();
-    if (!passWorkerId || !passStartDate || !passEndDate || !passPurpose) {
+    if (!passWorkerId || !passStartDate || !passEndDate || !passPurpose || !passSupervisor) {
       setPassMsg('All fields are required.'); return;
     }
-    requestPass(passWorkerId, passZone, passStartDate, passEndDate, passStartTime, passEndTime, passPurpose);
-    setPassWorkerId(''); setPassPurpose('');
+    requestPass(passWorkerId, passZone, passStartDate, passEndDate, passStartTime, passEndTime, passPurpose, passSupervisor);
+    setPassWorkerId(''); setPassPurpose(''); setPassSupervisor('');
     setPassMsg('Gate pass request submitted for Ceva review.');
     setTimeout(() => setPassMsg(''), 4000);
   };
@@ -510,7 +515,8 @@ export default function CompanyAdminDashboard({ view }) {
         </div>
       </div>
 
-      <div className="content-grid">
+      {view !== '3pl' ? (
+        <div className="content-grid">
         {/* Left Column / Primary Content */}
         <div>
           {/* Dashboard View: Active On-Site Roster */}
@@ -597,7 +603,7 @@ export default function CompanyAdminDashboard({ view }) {
           )}
 
           {/* Worker Profile Verification */}
-          {(!view || view === 'verification') && (
+          {(!view || view === 'verify') && (
             <div className="panel" style={{ marginBottom: 20 }}>
               <div className="panel-header">
                 <span className="panel-title">Worker Profile Verification</span>
@@ -649,7 +655,7 @@ export default function CompanyAdminDashboard({ view }) {
           )}
 
           {/* Initial Pass Verification - Step 1 */}
-          {(!view || view === 'verification') && (
+          {(!view || view === 'verify') && (
             <div className="panel" style={{ marginBottom: 20 }}>
               <div className="panel-header">
                 <span className="panel-title">Pass Verification — Step 1 (Vendor Review)</span>
@@ -695,7 +701,7 @@ export default function CompanyAdminDashboard({ view }) {
           )}
 
           {/* Sub-Contractor Routing Approvals for Parent Vendors */}
-          {(!view || view === 'verification') && subPending.length > 0 && (
+          {(!view || view === 'verify') && subPending.length > 0 && (
             <div className="panel" style={{ marginBottom: 20 }}>
               <div className="panel-header">
                 <span className="panel-title">Sub-Contractor Routing Approvals (3PL Partners)</span>
@@ -868,6 +874,37 @@ export default function CompanyAdminDashboard({ view }) {
                     <label>Phone Number</label>
                     <input type="text" placeholder="+1 555-0100" value={sPhone} onChange={e => setSPhone(e.target.value)} />
                   </div>
+                  <div className="field-group">
+                    <label>Profile Photo</label>
+                    <div className="photo-upload-zone">
+                      {sPhoto ? (
+                        <div className="photo-upload-preview-wrap">
+                          <img src={sPhoto} className="photo-upload-preview" alt="Preview" />
+                          <button type="button" className="photo-upload-remove-btn" onClick={() => setSPhoto('')}>&times;</button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="photo-upload-text">
+                            <strong>Click to upload</strong> or drag and drop
+                          </div>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>PNG, JPG or GIF</span>
+                        </>
+                      )}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="photo-upload-input" 
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => setSPhoto(reader.result);
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
                   <button type="submit" className="btn-primary">Add Supervisor</button>
                   {sMsg && <div className="form-feedback-success">{sMsg}</div>}
                 </form>
@@ -909,6 +946,37 @@ export default function CompanyAdminDashboard({ view }) {
                       <input type="text" placeholder="+1 555-1234" value={wPhone} onChange={e => setWPhone(e.target.value)} />
                     </div>
                   </div>
+                  <div className="field-group">
+                    <label>Profile Photo</label>
+                    <div className="photo-upload-zone">
+                      {wPhoto ? (
+                        <div className="photo-upload-preview-wrap">
+                          <img src={wPhoto} className="photo-upload-preview" alt="Preview" />
+                          <button type="button" className="photo-upload-remove-btn" onClick={() => setWPhoto('')}>&times;</button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="photo-upload-text">
+                            <strong>Click to upload</strong> or drag and drop
+                          </div>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>PNG, JPG or GIF</span>
+                        </>
+                      )}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="photo-upload-input" 
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => setWPhoto(reader.result);
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
                   <button type="submit" className="btn-primary">Register Worker</button>
                   {wMsg && <div className="form-feedback-success">{wMsg}</div>}
                 </form>
@@ -917,7 +985,7 @@ export default function CompanyAdminDashboard({ view }) {
           )}
 
           {/* Request Gate Pass */}
-          {(view === 'dashboard' || view === 'passes') && (
+          {view === 'passes' && (
             <div className="form-panel" style={{ marginBottom: 20 }}>
               <div className="form-panel-header">
                 <div className="form-panel-title">Request Gate Pass</div>
@@ -936,12 +1004,26 @@ export default function CompanyAdminDashboard({ view }) {
                       </select>
                     </div>
                     <div className="field-group">
+                      <label>Designated Supervisor *</label>
+                      <select value={passSupervisor} onChange={e => setPassSupervisor(e.target.value)} required>
+                        <option value="">-- Select Approved Supervisor --</option>
+                        {approvedSupervisors.map(s => (
+                          <option key={s.id} value={s.name}>{s.name} ({s.email})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="fields-row">
+                    <div className="field-group">
                       <label>Access Zone *</label>
                       <select value={passZone} onChange={e => setPassZone(e.target.value)}>
                         <option value="Zone A - Warehouse Floor">Zone A - Warehouse Floor</option>
                         <option value="Zone B - Cargo Loading">Zone B - Cargo Loading</option>
                         <option value="Zone C - Administration">Zone C - Administration</option>
                       </select>
+                    </div>
+                    <div className="field-group">
+                      {/* Empty field group to preserve 50/50 layout spacing */}
                     </div>
                   </div>
                   <div className="fields-row">
@@ -976,6 +1058,168 @@ export default function CompanyAdminDashboard({ view }) {
           )}
         </div>
       </div>
+      ) : (
+        /* 3PL Fleet Management View (Full Width) */
+        <div style={{ marginTop: 20 }}>
+          {(() => {
+            const sub3PLs = companies.filter(c => c.type === 'trucking' && c.parentCompanyId === selectedCompanyId);
+            return (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                  <div>
+                    <div style={{ fontSize: '1.35rem', fontWeight: 700, color: '#0f172a' }}>3PL Fleet Management</div>
+                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 2 }}>Sub-contracted carrier partners under {currentCompany?.name || 'your company'}</div>
+                  </div>
+                  <span style={{ background: '#7c3aed', color: '#fff', padding: '4px 14px', borderRadius: 20, fontSize: '0.78rem', fontWeight: 700 }}>
+                    {sub3PLs.length} Partner{sub3PLs.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+
+                {sub3PLs.length === 0 ? (
+                  <div className="panel">
+                    <div className="panel-body">
+                      <div className="empty-state">
+                        <div className="empty-state-title">No Sub-Contracted Partners Yet</div>
+                        <div className="empty-state-desc">When 3PL carriers register with your company as their parent, they will appear here once their registration is approved.</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : sub3PLs.map(carrier => {
+                  const carrierTrucks     = trucks.filter(t => t.companyId === carrier.id);
+                  const carrierDrivers    = drivers.filter(d => d.companyId === carrier.id);
+                  const carrierDeliveries = deliveries.filter(d => d.companyId === carrier.id);
+                  const approvedTrucks    = carrierTrucks.filter(t => t.status === 'approved').length;
+                  const approvedDrivers   = carrierDrivers.filter(d => d.status === 'approved').length;
+                  const activeDispatches  = carrierDeliveries.filter(d => d.status === 'checked_in').length;
+
+                  return (
+                    <div key={carrier.id} style={{ marginBottom: 28 }}>
+                      {/* Carrier header card */}
+                      <div className="panel" style={{ marginBottom: 16 }}>
+                        <div className="panel-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 10, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '1.1rem' }}>
+                              {carrier.name?.[0]}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a' }}>{carrier.name}</div>
+                              <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{carrier.email} &nbsp;&middot;&nbsp; {carrier.phone}</div>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontWeight: 700, fontSize: '1.2rem', color: '#0f172a' }}>{carrierTrucks.length}</div>
+                              <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Trucks ({approvedTrucks} approved)</div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontWeight: 700, fontSize: '1.2rem', color: '#0f172a' }}>{carrierDrivers.length}</div>
+                              <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Drivers ({approvedDrivers} approved)</div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontWeight: 700, fontSize: '1.2rem', color: '#16a34a' }}>{activeDispatches}</div>
+                              <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Active On-Site</div>
+                            </div>
+                          </div>
+                          <span className={`status-pill ${carrier.status === 'approved' ? 'pill-approved' : carrier.status === 'pending_ceva' ? 'pill-pending_ceva' : 'pill-pending'}`}>
+                            {carrier.status === 'approved' ? 'Approved' : carrier.status === 'pending_ceva' ? 'CEVA Review' : carrier.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Trucks & Drivers side by side */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 16 }}>
+                        {/* Trucks */}
+                        <div className="panel">
+                          <div className="panel-header">
+                            <span className="panel-title">Truck Roster</span>
+                            <span className="panel-badge">{carrierTrucks.length}</span>
+                          </div>
+                          {carrierTrucks.length === 0 ? (
+                            <div className="panel-body"><div style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center' }}>No trucks registered yet</div></div>
+                          ) : (
+                            <div className="panel-body-flush">
+                              <table className="data-table">
+                                <thead><tr><th>Plate</th><th>Model</th><th>Status</th></tr></thead>
+                                <tbody>
+                                  {carrierTrucks.map(t => (
+                                    <tr key={t.id}>
+                                      <td><div className="cell-primary" style={{ fontFamily: 'monospace' }}>{t.plate}</div></td>
+                                      <td><div className="cell-secondary">{t.model}</div></td>
+                                      <td><span className={`status-pill ${t.status === 'approved' ? 'pill-approved' : t.status === 'rejected' ? 'pill-rejected' : 'pill-pending'}`}>{t.status}</span></td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Drivers */}
+                        <div className="panel">
+                          <div className="panel-header">
+                            <span className="panel-title">Driver Roster</span>
+                            <span className="panel-badge">{carrierDrivers.length}</span>
+                          </div>
+                          {carrierDrivers.length === 0 ? (
+                            <div className="panel-body"><div style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center' }}>No drivers registered yet</div></div>
+                          ) : (
+                            <div className="panel-body-flush">
+                              <table className="data-table">
+                                <thead><tr><th>Driver Name</th><th>CDL License</th><th>Status</th></tr></thead>
+                                <tbody>
+                                  {carrierDrivers.map(d => (
+                                    <tr key={d.id}>
+                                      <td><div className="cell-primary">{d.name}</div></td>
+                                      <td><div className="cell-secondary" style={{ fontFamily: 'monospace' }}>{d.license}</div></td>
+                                      <td><span className={`status-pill ${d.status === 'approved' ? 'pill-approved' : d.status === 'rejected' ? 'pill-rejected' : 'pill-pending'}`}>{d.status}</span></td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Active Dispatches */}
+                      <div className="panel">
+                        <div className="panel-header">
+                          <span className="panel-title">Dispatch & Delivery Activity</span>
+                          <span className="panel-badge">{carrierDeliveries.length} total &nbsp;&middot;&nbsp; {activeDispatches} active</span>
+                        </div>
+                        {carrierDeliveries.length === 0 ? (
+                          <div className="panel-body"><div style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center' }}>No dispatches recorded</div></div>
+                        ) : (
+                          <div className="panel-body-flush">
+                            <table className="data-table">
+                              <thead><tr><th>ID</th><th>Type</th><th>Seal #</th><th>Cargo Details</th><th>Status</th></tr></thead>
+                              <tbody>
+                                {carrierDeliveries.map(d => (
+                                  <tr key={d.id}>
+                                    <td><div className="cell-mono cell-secondary">#{d.id.slice(-6)}</div></td>
+                                    <td><span style={{ textTransform: 'capitalize', fontWeight: 600, color: d.type === 'dropoff' ? '#0891b2' : '#7c3aed', fontSize: '0.8rem' }}>{d.type}</span></td>
+                                    <td><div className="cell-secondary" style={{ fontFamily: 'monospace' }}>{d.sealNumber}</div></td>
+                                    <td><div className="cell-secondary">{d.items || '—'}</div></td>
+                                    <td>
+                                      <span className={`status-pill ${d.status === 'checked_in' ? 'pill-approved' : d.status === 'checked_out' ? 'pill-pending_ceva' : 'pill-pending'}`}>
+                                        {d.status === 'checked_in' ? 'On-Site' : d.status === 'checked_out' ? 'Departed' : 'Assigned'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            );
+          })()}
+        </div>
+      )}
       {selectedPass && (
         <PassDetailsModal
           pass={selectedPass}

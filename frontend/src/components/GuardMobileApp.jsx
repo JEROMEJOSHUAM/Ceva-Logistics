@@ -134,60 +134,155 @@ export default function GuardMobileApp() {
           <div className="scan-result-card slide-in">
             {scanResult.status === 'check_in_confirm' && (
               <div className="scan-confirm check-in">
-                <div className="scan-status-badge entry">VALID PASS - ENTRY PERMITTED</div>
-                <img src={scanResult.worker?.photo} alt="" className="scan-avatar" />
-                <h3>{scanResult.worker?.name}</h3>
-                <p className="vendor-name">{scanResult.company?.name}</p>
+                <div className="worker-status-badge status-approved" style={{ marginBottom: 16 }}>
+                  VALID PASS - ENTRY PERMITTED
+                </div>
                 
-                <div className="scan-details">
-                  <div><strong>Zone:</strong> {scanResult.pass.zoneLevel}</div>
-                  <div><strong>Hours:</strong> {scanResult.pass.startTime} - {scanResult.pass.endTime}</div>
-                  <div><strong>Validity:</strong> {scanResult.pass.startDate} to {scanResult.pass.endDate}</div>
+                <div className="digital-pass-card" style={{ marginBottom: 16 }}>
+                  <div className="pass-header">
+                    <span className="pass-title">DIGITAL GATE PASS</span>
+                    <span className="pass-id-num">Pass #{scanResult.pass.id.slice(-6)}</span>
+                  </div>
+                  
+                  <div className="pass-body">
+                    <div className="pass-photo-wrap">
+                      {scanResult.worker?.photo ? (
+                        <img src={scanResult.worker.photo} alt={scanResult.worker.name} className="pass-avatar" />
+                      ) : (
+                        <div className="pass-avatar-placeholder">
+                          {scanResult.worker?.name?.[0]?.toUpperCase() || 'W'}
+                        </div>
+                      )}
+                      <div className="pass-name">
+                        <h4>{scanResult.worker?.name}</h4>
+                        <p className="pass-vendor">{scanResult.company?.name}</p>
+                      </div>
+                    </div>
+
+                    <div className="pass-info-grid">
+                      <div className="pass-info-item">
+                        <span>ZONE</span>
+                        <strong>{scanResult.pass.zoneLevel.split(' - ')[0]}</strong>
+                      </div>
+                      <div className="pass-info-item">
+                        <span>HOURS</span>
+                        <strong>{scanResult.pass.startTime.slice(0, 5)} - {scanResult.pass.endTime.slice(0, 5)}</strong>
+                      </div>
+                      <div className="pass-info-item" style={{ gridColumn: 'span 2' }}>
+                        <span>VALID DATES</span>
+                        <strong>{scanResult.pass.startDate} to {scanResult.pass.endDate}</strong>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <button 
-                  className="mobile-btn btn-success" 
-                  onClick={() => executeCheckIn(scanResult.pass.id)}
-                >
-                  🟢 Log Check-In Entry
-                </button>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button 
+                    className="mobile-btn" 
+                    style={{ backgroundColor: '#10b981', flex: 1, marginTop: 0 }}
+                    onClick={() => executeCheckIn(scanResult.pass.id)}
+                  >
+                    🟢 Log Check-In
+                  </button>
+                  <button 
+                    className="mobile-btn" 
+                    style={{ backgroundColor: '#64748b', flex: 1, marginTop: 0 }}
+                    onClick={() => setScanResult(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
 
             {scanResult.status === 'check_out_confirm' && (
               <div className="scan-confirm check-out">
-                <div className="scan-status-badge exit">LOGGED IN - EXIT DEPARTURE</div>
-                <img src={scanResult.worker?.photo} alt="" className="scan-avatar" />
-                <h3>{scanResult.worker?.name}</h3>
-                <p className="vendor-name">{scanResult.company?.name}</p>
-
-                <div className="scan-details">
-                  <div><strong>Checked In:</strong> {new Date(scanResult.pass.checkInTime).toLocaleTimeString()}</div>
-                  <div><strong>Allowed Shift:</strong> {scanResult.pass.startTime} - {scanResult.pass.endTime}</div>
+                <div className="worker-status-badge status-approved" style={{ backgroundColor: '#fee2e2', color: '#991b1b', borderColor: '#fca5a5', marginBottom: 16 }}>
+                  LOGGED IN - EXIT DEPARTURE
                 </div>
 
-                <button 
-                  className="mobile-btn btn-danger" 
-                  onClick={() => executeCheckOut(scanResult.pass.id)}
-                >
-                  🔴 Log Check-Out Exit
-                </button>
+                <div className="digital-pass-card" style={{ marginBottom: 16 }}>
+                  <div className="pass-header">
+                    <span className="pass-title">DIGITAL GATE PASS</span>
+                    <span className="pass-id-num">Pass #{scanResult.pass.id.slice(-6)}</span>
+                  </div>
+                  
+                  <div className="pass-body">
+                    <div className="pass-photo-wrap">
+                      {scanResult.worker?.photo ? (
+                        <img src={scanResult.worker.photo} alt={scanResult.worker.name} className="pass-avatar" />
+                      ) : (
+                        <div className="pass-avatar-placeholder">
+                          {scanResult.worker?.name?.[0]?.toUpperCase() || 'W'}
+                        </div>
+                      )}
+                      <div className="pass-name">
+                        <h4>{scanResult.worker?.name}</h4>
+                        <p className="pass-vendor">{scanResult.company?.name}</p>
+                      </div>
+                    </div>
+
+                    <div className="pass-info-grid">
+                      <div className="pass-info-item">
+                        <span>CHECKED IN</span>
+                        <strong>{scanResult.pass.checkInTime ? new Date(scanResult.pass.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Pending'}</strong>
+                      </div>
+                      <div className="pass-info-item">
+                        <span>ALLOWED SHIFT</span>
+                        <strong>{scanResult.pass.startTime.slice(0, 5)} - {scanResult.pass.endTime.slice(0, 5)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button 
+                    className="mobile-btn" 
+                    style={{ backgroundColor: '#ef4444', flex: 1, marginTop: 0 }}
+                    onClick={() => executeCheckOut(scanResult.pass.id)}
+                  >
+                    🔴 Log Check-Out
+                  </button>
+                  <button 
+                    className="mobile-btn" 
+                    style={{ backgroundColor: '#64748b', flex: 1, marginTop: 0 }}
+                    onClick={() => setScanResult(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
 
             {scanResult.status === 'expired' && (
               <div className="scan-confirm invalid">
-                <div className="scan-status-badge invalid">EXPIRED PASS</div>
-                <h3>{scanResult.worker?.name}</h3>
-                <p>This pass has already been used for entry and exit.</p>
+                <div className="worker-status-badge status-rejected" style={{ marginBottom: 16 }}>
+                  EXPIRED PASS
+                </div>
+                <div className="digital-pass-card" style={{ marginBottom: 16 }}>
+                  <div className="pass-header">
+                    <span className="pass-title">DIGITAL GATE PASS</span>
+                    <span className="pass-id-num">Pass #{scanResult.pass.id.slice(-6)}</span>
+                  </div>
+                  <div className="pass-body">
+                    <h4>{scanResult.worker?.name}</h4>
+                    <p style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>This pass has already been used for check-in and check-out.</p>
+                  </div>
+                </div>
                 <button className="mobile-btn btn-close" onClick={() => setScanResult(null)}>Close</button>
               </div>
             )}
 
             {scanResult.status === 'invalid' && (
               <div className="scan-confirm invalid">
-                <div className="scan-status-badge invalid">INVALID QR CODE</div>
-                <p>The scanned QR code is either invalid or rejected by Ceva Logistics.</p>
+                <div className="worker-status-badge status-rejected" style={{ marginBottom: 16 }}>
+                  INVALID QR CODE
+                </div>
+                <div className="digital-pass-card" style={{ marginBottom: 16 }}>
+                  <div className="pass-body">
+                    <p style={{ color: '#fca5a5', fontSize: '0.85rem', fontWeight: 600 }}>The scanned QR code is either invalid or rejected by Ceva Logistics.</p>
+                  </div>
+                </div>
                 <button className="mobile-btn btn-close" onClick={() => setScanResult(null)}>Close</button>
               </div>
             )}

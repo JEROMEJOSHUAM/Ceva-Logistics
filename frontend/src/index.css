@@ -990,3 +990,602 @@ body {
 .slide-in { animation: slide-up 0.2s ease; }
 @keyframes pulse-text { 0%,100%{opacity:1} 50%{opacity:0.55} }
 .pulse-text { animation: pulse-text 2s ease infinite; }
+
+/* ============================================================
+   MOBILE VIEW PREVIEW & APP SIMULATOR STYLES
+   ============================================================ */
+.mobile-app-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f1f5f9;
+  color: #1e293b;
+  overflow: hidden;
+}
+
+.mobile-header {
+  background-color: #022048; /* CEVA Dark Blue */
+  color: white;
+  padding-top: 32px;
+  padding-bottom: 12px;
+  text-align: center;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.mobile-header.guard-header {
+  background-color: #0f172a; /* Guard dark slate theme */
+}
+
+.mobile-status-bar {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  padding: 0 16px;
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+.mobile-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.mobile-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 24px;
+}
+
+.mobile-tabs {
+  display: flex;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.mobile-tab-btn {
+  flex: 1;
+  padding: 12px 6px;
+  border: none;
+  background: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-bottom: 2px solid transparent;
+}
+
+.mobile-tab-btn.active {
+  color: #022048;
+  border-bottom-color: #022048;
+}
+
+.mobile-session-selector {
+  background: white;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.mobile-select {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  background-color: #f8fafc;
+  font-weight: 500;
+  color: #0f172a;
+  outline: none;
+}
+
+.mobile-form-container {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-form-container h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  color: #0f172a;
+}
+
+.mobile-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.mobile-input-group label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.mobile-input-group input,
+.mobile-input-group select {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #0f172a;
+  outline: none;
+  background-color: #fff;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.mobile-input-group input:focus,
+.mobile-input-group select:focus {
+  border-color: #022048;
+}
+
+.mobile-input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mobile-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #022048;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-top: 6px;
+}
+
+.mobile-btn:active {
+  opacity: 0.85;
+}
+
+.mobile-feedback {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #16a34a;
+  text-align: center;
+  margin: 4px 0 0 0;
+}
+
+/* Guard & Truck Guard headcount */
+.guard-headcount-card {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: white;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.headcount-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+.headcount-num {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin: 6px 0;
+}
+
+.headcount-sub {
+  font-size: 0.68rem;
+  opacity: 0.7;
+}
+
+.guard-alarm-alert {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  border: 1px solid #fca5a5;
+}
+
+.mobile-pass-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.mobile-pass-history h4 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  margin: 12px 0 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.history-item {
+  background: white;
+  padding: 10px 12px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+}
+
+.history-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.history-details strong {
+  font-size: 0.75rem;
+  color: #0f172a;
+}
+
+.history-details span {
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.history-status {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.history-status.status-approved {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.history-status.status-pending_vendor {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.history-status.status-pending_ceva {
+  background-color: #e0f2fe;
+  color: #075985;
+}
+
+.history-status.status-rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* ============================================================
+   DIGITAL GATE PASS STYLES (MATCHING REFERENCE DESIGN)
+   ============================================================ */
+.worker-status-badge {
+  background-color: #f1f5f9;
+  color: #475569;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-align: center;
+  margin-bottom: 14px;
+  border: 1.5px solid #e2e8f0;
+}
+.worker-status-badge.status-approved {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.digital-pass-card {
+  background: #022048; /* Deep Indigo Navy Blue */
+  color: white;
+  padding: 24px;
+  border-radius: 20px;
+  box-shadow: 0 15px 35px rgba(0,32,72,0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.pass-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed rgba(255,255,255,0.15);
+  padding-bottom: 12px;
+}
+
+.pass-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #93c5fd;
+  text-transform: uppercase;
+}
+
+.pass-id-num {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-family: monospace;
+  opacity: 0.9;
+}
+
+.pass-photo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pass-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid #ef4444; /* High contrast red border */
+  object-fit: cover;
+  box-shadow: 0 0 10px rgba(239,68,68,0.3);
+}
+
+.pass-avatar-placeholder {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid #ef4444;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 1.25rem;
+  box-shadow: 0 0 10px rgba(239,68,68,0.3);
+  flex-shrink: 0;
+}
+
+.pass-name {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+.pass-name h4 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: white;
+  margin: 0 !important;
+  padding: 0;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.pass-vendor {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin: 4px 0 0 0 !important;
+  padding: 0;
+  line-height: 1.2;
+}
+
+/* QR Code Simulator Box */
+.qr-box-sim {
+  background: white;
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 140px;
+  height: 140px;
+  margin: 16px auto 4px auto;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.06);
+}
+
+
+
+.pass-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 16px;
+  margin-top: 4px;
+}
+
+.pass-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pass-info-item span {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #93c5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pass-info-item strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: white;
+}
+
+.reminder-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.btn-reminder-toggle {
+  width: 100%;
+  padding: 12px;
+  background-color: rgba(255,255,255,0.08);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-reminder-toggle:hover {
+  background-color: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.25);
+}
+
+.btn-reminder-toggle.active {
+  background-color: rgba(239,68,68,0.2);
+  color: #fca5a5;
+  border-color: rgba(239,68,68,0.4);
+}
+
+.reminder-alert-toast {
+  background-color: rgba(239,68,68,0.15);
+  color: #fecaca;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  text-align: center;
+  border: 1px solid rgba(239,68,68,0.3);
+}
+
+
+/* ============================================================
+   PREMIUM FILE UPLOADER & PREVIEW STYLES
+   ============================================================ */
+.photo-upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--r-md);
+  padding: 16px;
+  text-align: center;
+  background-color: var(--bg-app);
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 100px;
+}
+.photo-upload-zone:hover {
+  border-color: var(--ceva-blue);
+  background-color: var(--bg-tertiary);
+}
+.photo-upload-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.photo-upload-preview-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+.photo-upload-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  object-fit: cover;
+}
+.photo-upload-remove-btn {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  z-index: 10;
+}
+.photo-upload-text {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.photo-upload-text strong {
+  color: var(--ceva-blue);
+}
+
+/* Mobile customized file upload zone */
+.mobile-photo-upload-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  background-color: #f8fafc;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 90px;
+}
+.mobile-photo-upload-zone:active {
+  background-color: #f1f5f9;
+  border-color: #022048;
+}
+.mobile-photo-upload-text {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+.mobile-photo-upload-text strong {
+  color: #022048;
+}
+
+.profile-dropdown-item:hover {
+  background-color: #f1f5f9 !important;
+}

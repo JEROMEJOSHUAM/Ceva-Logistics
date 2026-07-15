@@ -265,16 +265,35 @@ CREATE POLICY "passes_vendor_all" ON public.gate_passes FOR ALL USING (public.ge
 -- RLS: trucks
 CREATE POLICY "trucks_ceva_all"   ON public.trucks FOR ALL USING (public.get_my_role() = 'ceva_admin');
 CREATE POLICY "trucks_cargo_all"  ON public.trucks FOR ALL USING (public.get_my_role() = 'cargo_admin');
-CREATE POLICY "trucks_vendor_own" ON public.trucks FOR ALL USING (public.get_my_role() = 'company_admin' AND company_id = public.get_my_company_id());
+CREATE POLICY "trucks_vendor_own" ON public.trucks FOR ALL USING (
+    public.get_my_role() = 'company_admin' 
+    AND (
+        company_id = public.get_my_company_id() 
+        OR company_id IN (SELECT id FROM public.companies WHERE parent_company_id = public.get_my_company_id())
+    )
+);
 
 -- RLS: drivers
 CREATE POLICY "drivers_ceva_all"   ON public.drivers FOR ALL USING (public.get_my_role() = 'ceva_admin');
 CREATE POLICY "drivers_cargo_all"  ON public.drivers FOR ALL USING (public.get_my_role() = 'cargo_admin');
-CREATE POLICY "drivers_vendor_own" ON public.drivers FOR ALL USING (public.get_my_role() = 'company_admin' AND company_id = public.get_my_company_id());
+CREATE POLICY "drivers_vendor_own" ON public.drivers FOR ALL USING (
+    public.get_my_role() = 'company_admin' 
+    AND (
+        company_id = public.get_my_company_id() 
+        OR company_id IN (SELECT id FROM public.companies WHERE parent_company_id = public.get_my_company_id())
+    )
+);
 
 -- RLS: deliveries
 CREATE POLICY "deliveries_ceva_all"  ON public.deliveries FOR ALL USING (public.get_my_role() = 'ceva_admin');
 CREATE POLICY "deliveries_cargo_all" ON public.deliveries FOR ALL USING (public.get_my_role() = 'cargo_admin');
+CREATE POLICY "deliveries_vendor_select" ON public.deliveries FOR SELECT USING (
+    public.get_my_role() = 'company_admin' 
+    AND (
+        company_id = public.get_my_company_id() 
+        OR company_id IN (SELECT id FROM public.companies WHERE parent_company_id = public.get_my_company_id())
+    )
+);
 
 -- RLS: gate_logs
 CREATE POLICY "logs_ceva_all"      ON public.gate_logs FOR ALL    USING (public.get_my_role() = 'ceva_admin');

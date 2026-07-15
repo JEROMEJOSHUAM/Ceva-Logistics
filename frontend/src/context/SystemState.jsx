@@ -10,10 +10,10 @@ const mapWorker   = r => ({ id: r.id, name: r.name, email: r.email, phone: r.pho
 const mapPass     = r => ({ id: r.id, workerId: r.worker_id, companyId: r.company_id, supervisorName: r.supervisor_name, zoneLevel: r.zone_level, startDate: r.start_date, endDate: r.end_date, startTime: r.start_time, endTime: r.end_time, purpose: r.purpose, status: r.status, checkedIn: r.checked_in, checkedOut: r.checked_out, qr_secure_signature: r.hmac_signature });
 const mapTruck    = r => ({ id: r.id, plate: r.plate, vin: r.vin, model: r.model, companyId: r.company_id, status: r.status });
 const mapDriver   = r => ({ id: r.id, name: r.name, license: r.license, photo: r.photo_url, companyId: r.company_id, status: r.status });
-const mapDelivery = r => ({ id: r.id, truckId: r.truck_id, driverId: r.driver_id, companyId: r.company_id, type: r.type, sealNumber: r.seal_number, baselineSealPhoto: r.baseline_seal_photo, items: r.items, status: r.status, checkedIn: r.checked_in, checkedOut: r.checked_out });
+const mapDelivery = r => ({ id: r.id, truckId: r.truck_id, driverId: r.driver_id, companyId: r.company_id, type: r.type, sealNumber: r.seal_number, baselineSealPhoto: r.baseline_seal_photo, containerPhoto: r.container_photo, destinationFacility: r.destination_facility, items: r.items, status: r.status, checkedIn: r.checked_in, checkedOut: r.checked_out });
 const mapLog      = r => ({ id: r.id, passId: r.pass_id, workerName: r.worker_name, companyName: r.company_name, action: r.action, type: r.type, timestamp: new Date(r.created_at).toLocaleTimeString() });
 const mapAlert    = r => ({ id: r.id, type: r.type, message: r.message, passId: r.pass_id, resolved: r.resolved, timestamp: new Date(r.created_at).toLocaleTimeString() });
-const mapSupervisor = r => ({ id: r.id, name: r.name, email: r.email, phone: r.phone, companyId: r.company_id, status: r.status });
+const mapSupervisor = r => ({ id: r.id, name: r.name, email: r.email, phone: r.phone, companyId: r.company_id, photo: r.photo_url, status: r.status });
 
 export const SystemProvider = ({ children }) => {
   const [companies,  setCompanies]  = useState([]);
@@ -116,11 +116,12 @@ export const SystemProvider = ({ children }) => {
     await loadCompanies();
   };
 
-  const registerWorker = async (name, companyId, supervisorName, email = '', phone = '') => {
+  const registerWorker = async (name, companyId, supervisorName, email = '', phone = '', photoUrl = '') => {
     const { data, error } = await supabase.from('workers').insert({
       name, email: email || `${name.toLowerCase().replace(/\s+/g,'_')}@vendor.com`,
       phone: phone || '+1 555-0000', company_id: companyId,
       supervisor_name: supervisorName, status: 'pending',
+      photo_url: photoUrl
     }).select().single();
     if (error) { console.error('registerWorker:', error.message); return null; }
     await loadWorkers();
@@ -133,12 +134,12 @@ export const SystemProvider = ({ children }) => {
     await loadWorkers();
   };
 
-  const requestPass = async (workerId, zone, startDate, endDate, startTime, endTime, purpose) => {
+  const requestPass = async (workerId, zone, startDate, endDate, startTime, endTime, purpose, supervisorName = '') => {
     const worker = workers.find(w => w.id === workerId);
     if (!worker) return null;
     const { data, error } = await supabase.from('gate_passes').insert({
       worker_id: workerId, company_id: worker.companyId,
-      supervisor_name: worker.supervisorName, zone_level: zone,
+      supervisor_name: supervisorName, zone_level: zone,
       start_date: startDate, end_date: endDate,
       start_time: startTime, end_time: endTime,
       purpose, status: 'pending_vendor',
@@ -157,7 +158,6 @@ export const SystemProvider = ({ children }) => {
 
   const approvePassCeva = async (passId, approve) => {
     if (approve) {
-      // Call FastAPI for HMAC signature generation
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const res = await fetch(`${API_URL}/passes/${passId}/approve`, {
@@ -167,16 +167,27 @@ export const SystemProvider = ({ children }) => {
             'Authorization': `Bearer ${session?.access_token || ''}`,
           },
         });
-        if (!res.ok) throw new Error('Backend offline');
-      } catch {
-        // Fallback: approve without HMAC if backend is offline
-        await supabase.from('gate_passes').update({ status: 'approved', hmac_signature: 'offline-approved' }).eq('id', passId);
+        if (res.ok) {
+          // Backend handled approval + HMAC write to Supabase — just reload
+          await loadPasses();
+          return;
+        }
+        // Backend returned an error (e.g. not configured) — fall through to fallback
+        console.warn('approvePassCeva: backend returned', res.status, '— using fallback');
+      } catch (err) {
+        console.warn('approvePassCeva: backend unreachable —', err.message, '— using fallback');
       }
+      // Offline fallback: approve directly via Supabase with a marker signature
+      await supabase.from('gate_passes').update({
+        status: 'approved',
+        hmac_signature: `offline-${passId.slice(0, 8)}-${Date.now()}`,
+      }).eq('id', passId);
     } else {
       await supabase.from('gate_passes').update({ status: 'rejected' }).eq('id', passId);
     }
     await loadPasses();
   };
+
 
   const checkInPass = async (passId) => {
     const pass = passes.find(p => p.id === passId);
@@ -231,10 +242,11 @@ export const SystemProvider = ({ children }) => {
     await loadDrivers();
   };
 
-  const assignDelivery = async (truckId, driverId, companyId, type, sealNumber, baselinePhoto = '', items = '') => {
+  const assignDelivery = async (truckId, driverId, companyId, type, sealNumber, baselinePhoto = '', items = '', containerPhoto = '', destinationFacility = 'CEVA Hub - Dock A') => {
     const { data, error } = await supabase.from('deliveries').insert({
       truck_id: truckId, driver_id: driverId, company_id: companyId,
       type, seal_number: sealNumber, baseline_seal_photo: baselinePhoto,
+      container_photo: containerPhoto, destination_facility: destinationFacility,
       items, status: 'assigned',
     }).select().single();
     if (error) { console.error('assignDelivery:', error.message); return null; }
@@ -285,9 +297,9 @@ export const SystemProvider = ({ children }) => {
     await loadAlerts();
   };
 
-  const registerSupervisor = async (name, email, phone, companyId) => {
+  const registerSupervisor = async (name, email, phone, companyId, photoUrl = '') => {
     const { data, error } = await supabase.from('supervisors').insert({
-      name, email, phone: phone || null, company_id: companyId, status: 'approved' // auto-approve supervisors for vendor admin or verify them
+      name, email, phone: phone || null, company_id: companyId, status: 'approved', photo_url: photoUrl
     }).select().single();
     if (error) { console.error('registerSupervisor:', error.message); return null; }
     await loadSupervisors();

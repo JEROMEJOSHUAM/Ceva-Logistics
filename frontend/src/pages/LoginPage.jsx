@@ -208,11 +208,79 @@ export default function LoginPage({ onRegister }) {
             <div style={{ flex:1, height:1, background:'#e2e8f0' }} />
           </div>
 
+          {/* Quick Switch Profiles */}
+          <div style={{ marginTop: 20, textAlign: 'left' }}>
+            <div style={{ fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.15em', color:'#94a3b8', marginBottom:10 }}>
+              ⚡ Prototype Profile Switcher
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('ceva_admin@cevalogistics.com');
+                  setPassword('CevaAdmin@2026');
+                  setError('');
+                }}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  fontFamily: "'Inter', sans-serif", fontSize: '0.8rem', fontWeight: 600,
+                  background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 8,
+                  padding: '10px 12px', color: '#002048', cursor: 'pointer', transition: 'all 0.18s'
+                }}
+                onMouseOver={e => e.currentTarget.style.background = '#f1f5f9'}
+                onMouseOut={e => e.currentTarget.style.background = '#f8fafc'}
+              >
+                <span>🏢 CEVA Logistics Admin</span>
+                <span style={{ fontSize: '0.65rem', background: '#e2e8f0', padding: '2px 6px', borderRadius: 4, color: '#475569' }}>ceva_admin</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('company_admin@quicktrans.com');
+                  setPassword('Vendor@2026');
+                  setError('');
+                }}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  fontFamily: "'Inter', sans-serif", fontSize: '0.8rem', fontWeight: 600,
+                  background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 8,
+                  padding: '10px 12px', color: '#6d28d9', cursor: 'pointer', transition: 'all 0.18s'
+                }}
+                onMouseOver={e => e.currentTarget.style.background = '#f1f5f9'}
+                onMouseOut={e => e.currentTarget.style.background = '#f8fafc'}
+              >
+                <span>🤝 Vendor Company Admin</span>
+                <span style={{ fontSize: '0.65rem', background: '#e2e8f0', padding: '2px 6px', borderRadius: 4, color: '#475569' }}>company_admin</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('cargo_admin@elitefleet.com');
+                  setPassword('Cargo@2026');
+                  setError('');
+                }}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  fontFamily: "'Inter', sans-serif", fontSize: '0.8rem', fontWeight: 600,
+                  background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 8,
+                  padding: '10px 12px', color: '#d97706', cursor: 'pointer', transition: 'all 0.18s'
+                }}
+                onMouseOver={e => e.currentTarget.style.background = '#f1f5f9'}
+                onMouseOut={e => e.currentTarget.style.background = '#f8fafc'}
+              >
+                <span>🚛 Truck & Fleet Admin</span>
+                <span style={{ fontSize: '0.65rem', background: '#e2e8f0', padding: '2px 6px', borderRadius: 4, color: '#475569' }}>cargo_admin</span>
+              </button>
+            </div>
+          </div>
+
           {/* Register link */}
           <button
             onClick={onRegister}
             style={{
-              width:'100%', marginTop:14,
+              width:'100%', marginTop:18,
               fontFamily:"'Inter',sans-serif", fontSize:'0.875rem', fontWeight:600,
               background:'transparent', border:'1.5px solid #e2e8f0',
               borderRadius:8, padding:'11px',

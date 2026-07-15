@@ -548,6 +548,8 @@ export default function CevaAdminDashboard({ view }) {
                         <th>Truck License [Plate]</th>
                         <th>Driver CDL Details</th>
                         <th>Security Seal ID</th>
+                        <th>Destination Facility</th>
+                        <th>Photos (Container / Seal)</th>
                         <th>Cargo Manifest</th>
                         <th>Status</th>
                       </tr>
@@ -570,6 +572,23 @@ export default function CevaAdminDashboard({ view }) {
                             <td>
                               <div className="sig-label">SEAL ID</div>
                               <div className="cell-mono cell-secondary" style={{ fontSize: '0.78rem' }}>{d.sealNumber}</div>
+                            </td>
+                            <td>
+                              <div className="cell-primary" style={{ fontSize: '0.85rem' }}>{d.destinationFacility || 'CEVA Hub - Dock A'}</div>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                {d.containerPhoto ? (
+                                  <img src={d.containerPhoto} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover', border: '1px solid #cbd5e1' }} alt="Container" />
+                                ) : (
+                                  <div style={{ width: '40px', height: '40px', borderRadius: '4px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>🚛</div>
+                                )}
+                                {d.baselineSealPhoto ? (
+                                  <img src={d.baselineSealPhoto} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover', border: '1px solid #cbd5e1' }} alt="Seal" />
+                                ) : (
+                                  <div style={{ width: '40px', height: '40px', borderRadius: '4px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>🔒</div>
+                                )}
+                              </div>
                             </td>
                             <td><div className="cell-secondary">{d.items}</div></td>
                             <td><StatusPill status={d.status} /></td>

@@ -81,6 +81,9 @@ export default function TruckAdminDashboard({ role, view }) {
   const [taskType,    setTaskType]     = useState('dropoff');
   const [seal,        setSeal]         = useState('');
   const [cargo,       setCargo]        = useState('');
+  const [dispSealPhoto, setDispSealPhoto] = useState('');
+  const [dispContainerPhoto, setDispContainerPhoto] = useState('');
+  const [dispDestination, setDispDestination] = useState('CEVA Hub - Dock A');
   const [formMsg,     setFormMsg]      = useState('');
 
   /* Ceva data */
@@ -97,6 +100,7 @@ export default function TruckAdminDashboard({ role, view }) {
   const pendingDrivers        = companyDrivers.filter(d => d.status === 'pending');
   const approvedTrucksList    = companyTrucks.filter(t => t.status === 'approved');
   const approvedDriversList   = companyDrivers.filter(d => d.status === 'approved');
+  const companyDeliveries     = deliveries.filter(d => d.companyId === selTruckingId);
 
   const handleRegisterTruck = (e) => {
     e.preventDefault();
@@ -118,9 +122,13 @@ export default function TruckAdminDashboard({ role, view }) {
 
   const handleDispatch = (e) => {
     e.preventDefault();
-    if (!dispDriverId || !dispTruckId || !seal) { setFormMsg('Select driver, truck and enter seal number.'); return; }
-    assignDelivery(dispTruckId, dispDriverId, selTruckingId, taskType, seal, cargo);
+    if (!dispDriverId || !dispTruckId || !seal || !dispContainerPhoto || !dispSealPhoto) {
+      setFormMsg('Driver, truck, seal number, container photo, and seal photo are all required.');
+      return;
+    }
+    assignDelivery(dispTruckId, dispDriverId, selTruckingId, taskType, seal, dispSealPhoto, cargo, dispContainerPhoto, dispDestination);
     setDispDriverId(''); setDispTruckId(''); setSeal(''); setCargo('');
+    setDispSealPhoto(''); setDispContainerPhoto(''); setDispDestination('CEVA Hub - Dock A');
     setFormMsg('Delivery dispatched successfully.');
     setTimeout(() => setFormMsg(''), 4000);
   };
@@ -416,6 +424,55 @@ export default function TruckAdminDashboard({ role, view }) {
             </div>
           )}
         </div>
+
+        {/* Active Cargo Dispatches */}
+        <div className="panel" style={{ marginTop: 20 }}>
+          <div className="panel-header">
+            <span className="panel-title">Active Cargo Dispatches</span>
+            <span className="panel-badge">{companyDeliveries.length} Total</span>
+          </div>
+          {companyDeliveries.length === 0 ? (
+            <div className="panel-body">
+              <div className="empty-state">
+                <div className="empty-state-title">No Active Dispatches</div>
+                <div className="empty-state-desc">Assign dispatches in the "Dispatch" section. They will appear here once assigned.</div>
+              </div>
+            </div>
+          ) : (
+            <div className="panel-body-flush">
+              <table className="data-table">
+                <thead>
+                  <tr><th>Dispatch ID</th><th>Type</th><th>Truck/Driver</th><th>Seal / Cargo</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  {companyDeliveries.map(d => {
+                    const trk = trucks.find(t => t.id === d.truckId);
+                    const drv = drivers.find(drv => drv.id === d.driverId);
+                    return (
+                      <tr key={d.id}>
+                        <td><div className="cell-mono cell-secondary">#{d.id.slice(-6)}</div></td>
+                        <td><span style={{ textTransform: 'capitalize', fontWeight: 600, color: d.type === 'dropoff' ? '#0891b2' : '#7c3aed', fontSize: '0.8rem' }}>{d.type}</span></td>
+                        <td>
+                          <div className="cell-primary">{drv?.name || 'Unknown'}</div>
+                          <div className="cell-secondary" style={{ fontFamily: 'monospace' }}>{trk?.plate || 'Unknown'}</div>
+                        </td>
+                        <td>
+                          <div className="cell-primary" style={{ fontFamily: 'monospace' }}>{d.sealNumber}</div>
+                          <div className="cell-secondary">{d.items || '—'}</div>
+                        </td>
+                        <td>
+                          <span className={`status-pill ${d.status === 'checked_in' ? 'pill-approved' : d.status === 'checked_out' ? 'pill-pending_ceva' : 'pill-pending'}`}>
+                            {d.status === 'checked_in' ? 'On-Site' : d.status === 'checked_out' ? 'Departed' : 'Assigned'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </>
     );
   }
@@ -468,6 +525,40 @@ export default function TruckAdminDashboard({ role, view }) {
                               <button className="btn-action btn-reject" onClick={() => verifyTruck(t.id, false)}>Reject</button>
                             </div>
                           </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Verified Trucks Roster */}
+            <div className="panel">
+              <div className="panel-header">
+                <span className="panel-title">Verified Trucks Roster</span>
+                <span className="panel-badge">{approvedTrucksList.length} Verified</span>
+              </div>
+              {approvedTrucksList.length === 0 ? (
+                <div className="panel-body">
+                  <div className="empty-state">
+                    <div className="empty-state-title">No Verified Trucks</div>
+                    <div className="empty-state-desc">All registered trucks will appear here once verified.</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="panel-body-flush">
+                  <table className="data-table">
+                    <thead><tr><th>Plate</th><th>Model / VIN</th><th>Status</th></tr></thead>
+                    <tbody>
+                      {approvedTrucksList.map(t => (
+                        <tr key={t.id}>
+                          <td><div className="cell-primary" style={{ fontFamily: 'monospace' }}>{t.plate}</div></td>
+                          <td>
+                            <div className="cell-secondary">{t.model}</div>
+                            <div className="cell-mono cell-secondary" style={{ fontSize: '0.7rem' }}>{t.vin}</div>
+                          </td>
+                          <td><span className="status-pill pill-approved">Approved</span></td>
                         </tr>
                       ))}
                     </tbody>
@@ -563,6 +654,42 @@ export default function TruckAdminDashboard({ role, view }) {
                 </div>
               )}
             </div>
+
+            {/* Verified Drivers Roster */}
+            <div className="panel">
+              <div className="panel-header">
+                <span className="panel-title">Verified Drivers Roster</span>
+                <span className="panel-badge">{approvedDriversList.length} Verified</span>
+              </div>
+              {approvedDriversList.length === 0 ? (
+                <div className="panel-body">
+                  <div className="empty-state">
+                    <div className="empty-state-title">No Verified Drivers</div>
+                    <div className="empty-state-desc">All registered drivers will appear here once verified.</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="panel-body-flush">
+                  <table className="data-table">
+                    <thead><tr><th>Driver</th><th>CDL License</th><th>Status</th></tr></thead>
+                    <tbody>
+                      {approvedDriversList.map(d => (
+                        <tr key={d.id}>
+                          <td>
+                            <div className="cell-with-avatar">
+                              {d.photo ? <img src={d.photo} alt={d.name} className="cell-avatar" /> : <div className="cell-avatar-initials">{d.name?.[0]}</div>}
+                              <div className="cell-primary">{d.name}</div>
+                            </div>
+                          </td>
+                          <td><div className="cell-mono cell-secondary">{d.license}</div></td>
+                          <td><span className="status-pill pill-approved">Approved</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
           <div>
             {/* Register Driver Form */}
@@ -605,49 +732,177 @@ export default function TruckAdminDashboard({ role, view }) {
           <span className="page-header-badge badge-trucking">Fleet Admin</span>
         </div>
         <TenantBar />
-        <div className="form-panel" style={{ maxWidth: 680 }}>
-          <div className="form-panel-header">
-            <div className="form-panel-title">Assign Delivery / Pickup Task</div>
-            <div className="form-panel-desc">Assign a verified driver and truck to a cargo operation.</div>
+        <div className="content-grid">
+          <div>
+            {/* Active Cargo Dispatches */}
+            <div className="panel">
+              <div className="panel-header">
+                <span className="panel-title">Active Cargo Dispatches</span>
+                <span className="panel-badge">{companyDeliveries.length} Total</span>
+              </div>
+              {companyDeliveries.length === 0 ? (
+                <div className="panel-body">
+                  <div className="empty-state">
+                    <div className="empty-state-title">No Active Dispatches</div>
+                    <div className="empty-state-desc">Assign cargo operations using the form on the right.</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="panel-body-flush">
+                  <table className="data-table">
+                    <thead>
+                      <tr><th>Dispatch ID</th><th>Type</th><th>Truck/Driver</th><th>Seal / Cargo</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                      {companyDeliveries.map(d => {
+                        const trk = trucks.find(t => t.id === d.truckId);
+                        const drv = drivers.find(drv => drv.id === d.driverId);
+                        return (
+                          <tr key={d.id}>
+                            <td><div className="cell-mono cell-secondary">#{d.id.slice(-6)}</div></td>
+                            <td><span style={{ textTransform: 'capitalize', fontWeight: 600, color: d.type === 'dropoff' ? '#0891b2' : '#7c3aed', fontSize: '0.8rem' }}>{d.type}</span></td>
+                            <td>
+                              <div className="cell-primary">{drv?.name || 'Unknown'}</div>
+                              <div className="cell-secondary" style={{ fontFamily: 'monospace' }}>{trk?.plate || 'Unknown'}</div>
+                            </td>
+                            <td>
+                              <div className="cell-primary" style={{ fontFamily: 'monospace' }}>{d.sealNumber}</div>
+                              <div className="cell-secondary">{d.items || '—'}</div>
+                            </td>
+                            <td>
+                              <span className={`status-pill ${d.status === 'checked_in' ? 'pill-approved' : d.status === 'checked_out' ? 'pill-pending_ceva' : 'pill-pending'}`}>
+                                {d.status === 'checked_in' ? 'On-Site' : d.status === 'checked_out' ? 'Departed' : 'Assigned'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="form-panel-body">
-            <form onSubmit={handleDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div className="fields-row">
-                <div className="field-group">
-                  <label>Select Driver</label>
-                  <select value={dispDriverId} onChange={e => setDispDriverId(e.target.value)} required>
-                    <option value="">-- Choose Driver --</option>
-                    {approvedDriversList.map(d => <option key={d.id} value={d.id}>{d.name} ({d.license})</option>)}
-                  </select>
-                </div>
-                <div className="field-group">
-                  <label>Select Truck</label>
-                  <select value={dispTruckId} onChange={e => setDispTruckId(e.target.value)} required>
-                    <option value="">-- Choose Truck --</option>
-                    {approvedTrucksList.map(t => <option key={t.id} value={t.id}>{t.plate} ({t.model})</option>)}
-                  </select>
-                </div>
+          <div>
+            <div className="form-panel">
+              <div className="form-panel-header">
+                <div className="form-panel-title">Assign Delivery / Pickup Task</div>
+                <div className="form-panel-desc">Assign a verified driver and truck to a cargo operation.</div>
               </div>
-              <div className="fields-row">
-                <div className="field-group">
-                  <label>Task Type</label>
-                  <select value={taskType} onChange={e => setTaskType(e.target.value)}>
-                    <option value="dropoff">Inbound Drop-off</option>
-                    <option value="pickup">Outbound Pickup</option>
-                  </select>
-                </div>
-                <div className="field-group">
-                  <label>Container Seal # *</label>
-                  <input type="text" placeholder="SEAL-55441" value={seal} onChange={e => setSeal(e.target.value)} required />
-                </div>
+              <div className="form-panel-body">
+                <form onSubmit={handleDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div className="fields-row">
+                    <div className="field-group">
+                      <label>Select Driver</label>
+                      <select value={dispDriverId} onChange={e => setDispDriverId(e.target.value)} required>
+                        <option value="">-- Choose Driver --</option>
+                        {approvedDriversList.map(d => <option key={d.id} value={d.id}>{d.name} ({d.license})</option>)}
+                      </select>
+                    </div>
+                    <div className="field-group">
+                      <label>Select Truck</label>
+                      <select value={dispTruckId} onChange={e => setDispTruckId(e.target.value)} required>
+                        <option value="">-- Choose Truck --</option>
+                        {approvedTrucksList.map(t => <option key={t.id} value={t.id}>{t.plate} ({t.model})</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="fields-row">
+                    <div className="field-group">
+                      <label>Task Type</label>
+                      <select value={taskType} onChange={e => setTaskType(e.target.value)}>
+                        <option value="dropoff">Inbound Drop-off</option>
+                        <option value="pickup">Outbound Pickup</option>
+                      </select>
+                    </div>
+                    <div className="field-group">
+                      <label>Container Seal # *</label>
+                      <input type="text" placeholder="SEAL-55441" value={seal} onChange={e => setSeal(e.target.value)} required />
+                    </div>
+                  </div>
+                  <div className="fields-row">
+                    <div className="field-group">
+                      <label>Cargo Description</label>
+                      <input type="text" placeholder="Electronics Batch 4A" value={cargo} onChange={e => setCargo(e.target.value)} />
+                    </div>
+                    <div className="field-group">
+                      <label>Destination Facility Dropoff *</label>
+                      <select value={dispDestination} onChange={e => setDispDestination(e.target.value)} required>
+                        <option value="CEVA Hub - Dock A">CEVA Hub - Dock A</option>
+                        <option value="CEVA Hub - Dock B">CEVA Hub - Dock B</option>
+                        <option value="CEVA Hub - Dock C">CEVA Hub - Dock C</option>
+                        <option value="CEVA Hub - Dock D">CEVA Hub - Dock D</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="fields-row">
+                    <div className="field-group">
+                      <label>Container Photo *</label>
+                      <div className="photo-upload-zone">
+                        {dispContainerPhoto ? (
+                          <div className="photo-upload-preview-wrap">
+                            <img src={dispContainerPhoto} className="photo-upload-preview" alt="Container" />
+                            <button type="button" className="photo-upload-remove-btn" onClick={() => setDispContainerPhoto('')}>&times;</button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="photo-upload-text"><strong>Upload Container Photo</strong></div>
+                            <span style={{ fontSize: '0.65rem' }}>Click or drag file</span>
+                          </>
+                        )}
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="photo-upload-input" 
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => setDispContainerPhoto(reader.result);
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="field-group">
+                      <label>Seal Photo *</label>
+                      <div className="photo-upload-zone">
+                        {dispSealPhoto ? (
+                          <div className="photo-upload-preview-wrap">
+                            <img src={dispSealPhoto} className="photo-upload-preview" alt="Seal" />
+                            <button type="button" className="photo-upload-remove-btn" onClick={() => setDispSealPhoto('')}>&times;</button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="photo-upload-text"><strong>Upload Seal Photo</strong></div>
+                            <span style={{ fontSize: '0.65rem' }}>Click or drag file</span>
+                          </>
+                        )}
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="photo-upload-input" 
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => setDispSealPhoto(reader.result);
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button type="submit" className="btn-primary">Dispatch Assigned Driver</button>
+                  {formMsg && <div className="form-feedback-success">{formMsg}</div>}
+                </form>
               </div>
-              <div className="field-group">
-                <label>Cargo Description</label>
-                <input type="text" placeholder="Electronics Batch 4A" value={cargo} onChange={e => setCargo(e.target.value)} />
-              </div>
-              <button type="submit" className="btn-primary">Dispatch Assigned Driver</button>
-              {formMsg && <div className="form-feedback-success">{formMsg}</div>}
-            </form>
+            </div>
           </div>
         </div>
       </>
