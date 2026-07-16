@@ -50,21 +50,20 @@ export default function WorkerMobileApp() {
       setRegMsg('Please select a verified company.');
       return;
     }
-    if (!name || !supervisor) {
-      setRegMsg('Name and supervisor are required.');
+    if (!name) {
+      setRegMsg('Name is required.');
       return;
     }
     const newW = registerWorker(
       name, 
       companyId, 
-      supervisor, 
+      'Pending Assignment', 
       email || `${name.toLowerCase().replace(/\s+/g, '')}@vendor.com`, 
       phone || '+1 555-4321',
       photo
     );
     setActiveWorkerId(newW.id);
     setName('');
-    setSupervisor('');
     setEmail('');
     setPhone('');
     setPhoto('');
@@ -174,16 +173,7 @@ export default function WorkerMobileApp() {
                   ))}
                 </select>
               </div>
-              <div className="mobile-input-group">
-                <label>Supervisor</label>
-                <input 
-                  type="text" 
-                  placeholder="Supervisor Name" 
-                  value={supervisor} 
-                  onChange={(e) => setSupervisor(e.target.value)} 
-                  required
-                />
-              </div>
+
               <div className="mobile-input-group">
                 <label>Email</label>
                 <input 

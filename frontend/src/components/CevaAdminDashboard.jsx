@@ -84,11 +84,22 @@ function TwoFAModal({ smsCode, onVerify, onCancel }) {
 }
 
 /* ── Main Dashboard ───────────────────────────────────────── */
-function PassDetailsModal({ pass, onClose, workers, supervisors, companies }) {
+function PassDetailsModal({ pass, onClose, workers, supervisors, companies, passes }) {
   if (!pass) return null;
-  const worker = workers.find(w => w.id === pass.workerId);
   const company = companies.find(c => c.id === pass.companyId);
-  const supervisor = supervisors.find(s => s.name === pass.supervisorName || (worker && s.name === worker.supervisorName));
+  const relatedPasses = passes ? passes.filter(p => 
+    p.companyId === pass.companyId &&
+    p.supervisorName === pass.supervisorName &&
+    p.zoneLevel === pass.zoneLevel &&
+    p.startDate === pass.startDate &&
+    p.endDate === pass.endDate &&
+    p.startTime === pass.startTime &&
+    p.endTime === pass.endTime &&
+    p.purpose === pass.purpose &&
+    p.status === pass.status
+  ) : [pass];
+  const firstWorker = workers.find(w => w.id === pass.workerId);
+  const supervisor = supervisors.find(s => s.name === pass.supervisorName || (firstWorker && s.name === firstWorker.supervisorName));
 
   return (
     <div className="modal-overlay" style={{ zIndex: 1100 }}>
@@ -103,7 +114,9 @@ function PassDetailsModal({ pass, onClose, workers, supervisors, companies }) {
           <div style={{ background: '#f8fafc', padding: 12, borderRadius: 6, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Pass ID</div>
-              <div style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: '#0f172a' }}>#{pass.id}</div>
+              <div style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: '#0f172a' }}>
+                {relatedPasses.length > 1 ? `[Batch: ${relatedPasses.length} Passes]` : `#${pass.id}`}
+              </div>
             </div>
             <div>
               <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Access Zone</div>
@@ -126,23 +139,28 @@ function PassDetailsModal({ pass, onClose, workers, supervisors, companies }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {/* Worker Column */}
             <div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--ceva-blue)', fontWeight: 600, borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 8 }}>Worker Profile</div>
-              {worker ? (
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  {worker.photo ? (
-                    <img src={worker.photo} alt={worker.name} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{worker.name?.[0]}</div>
-                  )}
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0f172a' }}>{worker.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{worker.email}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{worker.phone}</div>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Worker info unavailable</div>
-              )}
+              <div style={{ fontSize: '0.8rem', color: 'var(--ceva-blue)', fontWeight: 600, borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 8 }}>
+                Worker Profile{relatedPasses.length > 1 ? `s (${relatedPasses.length})` : ''}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '160px', overflowY: 'auto', paddingRight: 4 }}>
+                {relatedPasses.map(rp => {
+                  const rWorker = workers.find(w => w.id === rp.workerId);
+                  if (!rWorker) return null;
+                  return (
+                    <div key={rp.id} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      {rWorker.photo ? (
+                        <img src={rWorker.photo} alt={rWorker.name} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.85rem', color: '#475569' }}>{rWorker.name?.[0]}</div>
+                      )}
+                      <div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a' }}>{rWorker.name}</div>
+                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{rWorker.email} | {rWorker.phone}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Supervisor Column */}
@@ -307,7 +325,7 @@ function CompanyDetailsModal({ company, onClose, companies }) {
 export default function CevaAdminDashboard({ view }) {
   const {
     companies, verifyCompany,
-    passes, approvePassCeva, workers, trucks, drivers,
+    passes, approvePassCeva, approvePassCevaBulk, workers, trucks, drivers,
     activeHeadcount, activeTruckHeadcount, logs, alerts, resolveAlert, deliveries = [], supervisors = []
   } = useSystem();
 
@@ -746,69 +764,124 @@ export default function CevaAdminDashboard({ view }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, width: '100%', marginTop: 8 }}>
           
           {/* Final Gate Pass Clearance Requests (Step 2) */}
-          <div className="panel">
-            <div className="panel-header">
-              <span className="panel-title">Final Gate Pass Clearance Requests (Step 2)</span>
-              <span className="panel-badge">{pendingPasses.length} Awaiting</span>
-            </div>
-            {pendingPasses.length === 0 ? (
-              <div className="panel-body">
-                <div className="empty-state">
-                  <div className="empty-state-title">No Pending Clearance Requests</div>
-                  <div className="empty-state-desc">All gate pass requests verified by Vendor Admins have been signed.</div>
+          {/* Final Gate Pass Clearance Requests (Step 2) */}
+          {(() => {
+            const getGroupedPendingPasses = (passesList) => {
+              const groups = {};
+              passesList.forEach(p => {
+                const key = `${p.companyId}_${p.supervisorName}_${p.zoneLevel}_${p.startDate}_${p.endDate}_${p.startTime}_${p.endTime}_${p.purpose}`;
+                if (!groups[key]) {
+                  groups[key] = [];
+                }
+                groups[key].push(p);
+              });
+              return Object.values(groups).map(group => ({
+                id: group[0].id,
+                companyId: group[0].companyId,
+                supervisorName: group[0].supervisorName,
+                zoneLevel: group[0].zoneLevel,
+                startDate: group[0].startDate,
+                endDate: group[0].endDate,
+                startTime: group[0].startTime,
+                endTime: group[0].endTime,
+                purpose: group[0].purpose,
+                passes: group
+              }));
+            };
+            const groupedPendingPasses = getGroupedPendingPasses(pendingPasses);
+
+            return (
+              <div className="panel">
+                <div className="panel-header">
+                  <span className="panel-title">Final Gate Pass Clearance Requests (Step 2)</span>
+                  <span className="panel-badge">{pendingPasses.length} Awaiting</span>
                 </div>
-              </div>
-            ) : (
-              <div className="panel-body-flush">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Pass ID</th>
-                      <th>Visitor Details</th>
-                      <th>Zone Clearance</th>
-                      <th>Validity Window</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pendingPasses.map(p => {
-                      const worker = workers.find(w => w.id === p.workerId);
-                      const vendor = companies.find(c => c.id === p.companyId);
-                      return (
-                        <tr key={p.id}>
-                          <td><div className="cell-mono cell-secondary">#{p.id.slice(-6)}</div></td>
-                          <td>
-                            <div className="cell-with-avatar">
-                              {worker?.photo
-                                ? <img src={worker.photo} alt={worker?.name} className="cell-avatar" />
-                                : <div className="cell-avatar-initials">{worker?.name?.[0] || '?'}</div>
-                              }
-                              <div>
-                                <div className="cell-primary">{worker?.name || 'Unknown'}</div>
-                                <div className="cell-secondary">{vendor?.name}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td><span className="zone-badge">{p.zoneLevel}</span></td>
-                          <td>
-                            <div className="cell-secondary">{p.startDate} to {p.endDate}</div>
-                            <div className="cell-secondary">{p.startTime} – {p.endTime}</div>
-                          </td>
-                          <td>
-                            <div className="actions-cell">
-                              <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedPass(p)}>View Details</button>
-                              <button className="btn-action btn-approve" onClick={() => approvePassCeva(p.id, true)}>Approve & Sign</button>
-                              <button className="btn-action btn-reject" onClick={() => approvePassCeva(p.id, false)}>Deny</button>
-                            </div>
-                          </td>
+                {pendingPasses.length === 0 ? (
+                  <div className="panel-body">
+                    <div className="empty-state">
+                      <div className="empty-state-title">No Pending Clearance Requests</div>
+                      <div className="empty-state-desc">All gate pass requests verified by Vendor Admins have been signed.</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="panel-body-flush">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Pass ID</th>
+                          <th>Worker(s)</th>
+                          <th>Supervisor</th>
+                          <th>Zone Clearance</th>
+                          <th>Validity Window</th>
+                          <th>Actions</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody>
+                        {groupedPendingPasses.map(g => {
+                          const isGroup = g.passes.length > 1;
+                          const vendor = companies.find(c => c.id === g.companyId);
+                          const workerNames = g.passes.map(p => {
+                            const w = workers.find(wk => wk.id === p.workerId);
+                            return w ? w.name : 'Unknown';
+                          }).filter(Boolean);
+                          const passIds = g.passes.map(p => p.id);
+
+                          return (
+                            <tr key={g.id}>
+                              <td>
+                                <div className="cell-mono cell-secondary">
+                                  {isGroup ? `[${g.passes.length} Passes]` : `#${g.id.slice(-6)}`}
+                                </div>
+                              </td>
+                              <td>
+                                <div className="cell-primary" style={{ whiteSpace: 'normal', maxWidth: '300px' }}>
+                                  {isGroup ? (
+                                    <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                                      👥 {workerNames.join(', ')}
+                                    </span>
+                                  ) : (
+                                    workerNames[0] || 'Unknown'
+                                  )}
+                                  <div className="cell-secondary">{vendor?.name}</div>
+                                </div>
+                              </td>
+                              <td>
+                                <div className="cell-secondary" style={{ fontWeight: 500, color: '#475569' }}>
+                                  👤 {g.supervisorName || 'N/A'}
+                                </div>
+                              </td>
+                              <td><span className="zone-badge">{g.zoneLevel}</span></td>
+                              <td>
+                                <div className="cell-secondary">{g.startDate} to {g.endDate}</div>
+                                <div className="cell-secondary">{g.startTime} – {g.endTime}</div>
+                              </td>
+                              <td>
+                                <div className="actions-cell">
+                                  {isGroup ? (
+                                    <>
+                                      <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedPass(g.passes[0])}>View Details</button>
+                                      <button className="btn-action btn-approve" onClick={() => approvePassCevaBulk(passIds, true)}>Approve & Sign All</button>
+                                      <button className="btn-action btn-reject" onClick={() => approvePassCevaBulk(passIds, false)}>Deny All</button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedPass(g.passes[0])}>View Details</button>
+                                      <button className="btn-action btn-approve" onClick={() => approvePassCeva(g.id, true)}>Approve & Sign</button>
+                                      <button className="btn-action btn-reject" onClick={() => approvePassCeva(g.id, false)}>Deny</button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
 
           {/* Issued Pass Registry (HMAC Authorized) */}
           <div className="panel">
@@ -870,6 +943,7 @@ export default function CevaAdminDashboard({ view }) {
           workers={workers}
           supervisors={supervisors}
           companies={companies}
+          passes={passes}
         />
       )}
       {selectedCompany && (

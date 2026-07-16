@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { SystemProvider } from './context/SystemState';
+import { SystemProvider, useSystem } from './context/SystemState';
 import SimulatorControls from './components/SimulatorControls';
 import LoginPage from './pages/LoginPage';
 import CompanyRegistrationForm from './components/CompanyRegistrationForm';
@@ -223,6 +223,7 @@ function LoadingScreen() {
 /* ── Main authenticated app ──────────────────────────────── */
 function AuthenticatedApp() {
   const { profile, signOut, signIn } = useAuth();
+  const { passes = [], workers = [], companies = [] } = useSystem();
   const role = profile?.role || 'ceva_admin';
   const nav  = NAV_BY_ROLE[role] || NAV_BY_ROLE.ceva_admin;
   const defaultPage = DEFAULT_PAGE_BY_ROLE[role] || 'vms_ceva_dashboard';
@@ -390,16 +391,38 @@ function AuthenticatedApp() {
           {nav.map(section => (
             <div key={section.group} className="sidebar-section">
               <div className="sidebar-group-label">{section.group}</div>
-              {section.items.map(item => (
-                <button
-                  key={item.id}
-                  className={`sidebar-item${activePage === item.id ? ' active' : ''}`}
-                  onClick={() => setActivePage(item.id)}
-                >
-                  <span className="sidebar-icon">{item.icon}</span>
-                  <span className="sidebar-label">{item.label}</span>
-                </button>
-              ))}
+              {section.items.map(item => {
+                const getBadgeCount = (itemId) => {
+                  if (itemId === 'vms_vendor_verify') {
+                    const companyWorkers = workers.filter(w => w.companyId === profile?.company_id);
+                    const pendingWorkersCount = companyWorkers.filter(w => w.status === 'pending').length;
+                    const pendingPassesCount = passes.filter(p => p.companyId === profile?.company_id && p.status === 'pending_vendor').length;
+                    return pendingWorkersCount + pendingPassesCount;
+                  }
+                  if (itemId === 'vms_ceva_onboarding') {
+                    return companies.filter(c => c.status === 'pending' && c.type === 'vendor').length;
+                  }
+                  if (itemId === 'vms_ceva_passes') {
+                    return passes.filter(p => p.status === 'pending_ceva').length;
+                  }
+                  return 0;
+                };
+                const badgeCount = getBadgeCount(item.id);
+
+                return (
+                  <button
+                    key={item.id}
+                    className={`sidebar-item${activePage === item.id ? ' active' : ''}`}
+                    onClick={() => setActivePage(item.id)}
+                  >
+                    <span className="sidebar-icon">{item.icon}</span>
+                    <span className="sidebar-label">{item.label}</span>
+                    {badgeCount > 0 && (
+                      <span className="sidebar-badge">{badgeCount}</span>
+                    )}
+                  </button>
+                );
+              })}
               <div className="sidebar-divider" />
             </div>
           ))}

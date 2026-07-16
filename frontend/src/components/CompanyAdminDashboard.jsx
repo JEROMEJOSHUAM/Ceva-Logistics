@@ -4,18 +4,29 @@ import { useAuth } from '../context/AuthContext';
 
 function StatusPill({ status }) {
   const map = {
-    approved:'pill-approved', pending:'pill-pending',
-    pending_vendor:'pill-pending_vendor', pending_ceva:'pill-pending_ceva', rejected:'pill-rejected',
+    approved: 'pill-approved', pending: 'pill-pending',
+    pending_vendor: 'pill-pending_vendor', pending_ceva: 'pill-pending_ceva', rejected: 'pill-rejected',
   };
-  const label = { approved:'Approved', pending:'Pending', pending_vendor:'Vendor Review', pending_ceva:'Ceva Review', rejected:'Rejected' };
+  const label = { approved: 'Approved', pending: 'Pending', pending_vendor: 'Vendor Review', pending_ceva: 'Ceva Review', rejected: 'Rejected' };
   return <span className={`status-pill ${map[status] || 'pill-pending'}`}>{label[status] || status}</span>;
 }
 
-function PassDetailsModal({ pass, onClose, workers, supervisors, companies }) {
+function PassDetailsModal({ pass, onClose, workers, supervisors, companies, passes }) {
   if (!pass) return null;
-  const worker = workers.find(w => w.id === pass.workerId);
   const company = companies.find(c => c.id === pass.companyId);
-  const supervisor = supervisors.find(s => s.name === pass.supervisorName || (worker && s.name === worker.supervisorName));
+  const relatedPasses = passes ? passes.filter(p =>
+    p.companyId === pass.companyId &&
+    p.supervisorName === pass.supervisorName &&
+    p.zoneLevel === pass.zoneLevel &&
+    p.startDate === pass.startDate &&
+    p.endDate === pass.endDate &&
+    p.startTime === pass.startTime &&
+    p.endTime === pass.endTime &&
+    p.purpose === pass.purpose &&
+    p.status === pass.status
+  ) : [pass];
+  const firstWorker = workers.find(w => w.id === pass.workerId);
+  const supervisor = supervisors.find(s => s.name === pass.supervisorName || (firstWorker && s.name === firstWorker.supervisorName));
 
   return (
     <div className="modal-overlay" style={{ zIndex: 1100 }}>
@@ -24,13 +35,15 @@ function PassDetailsModal({ pass, onClose, workers, supervisors, companies }) {
           <div className="modal-title" style={{ margin: 0 }}>Gate Pass Clearance Details</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b', lineHeight: 1 }}>&times;</button>
         </div>
-        
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, textAlign: 'left' }}>
           {/* Pass Info */}
           <div style={{ background: '#f8fafc', padding: 12, borderRadius: 6, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Pass ID</div>
-              <div style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: '#0f172a' }}>#{pass.id}</div>
+              <div style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: '#0f172a' }}>
+                {relatedPasses.length > 1 ? `[Batch: ${relatedPasses.length} Passes]` : `#${pass.id}`}
+              </div>
             </div>
             <div>
               <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Access Zone</div>
@@ -53,23 +66,28 @@ function PassDetailsModal({ pass, onClose, workers, supervisors, companies }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {/* Worker Column */}
             <div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--ceva-blue)', fontWeight: 600, borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 8 }}>Worker Profile</div>
-              {worker ? (
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  {worker.photo ? (
-                    <img src={worker.photo} alt={worker.name} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{worker.name?.[0]}</div>
-                  )}
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0f172a' }}>{worker.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{worker.email}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{worker.phone}</div>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Worker info unavailable</div>
-              )}
+              <div style={{ fontSize: '0.8rem', color: 'var(--ceva-blue)', fontWeight: 600, borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 8 }}>
+                Worker Profile{relatedPasses.length > 1 ? `s (${relatedPasses.length})` : ''}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '160px', overflowY: 'auto', paddingRight: 4 }}>
+                {relatedPasses.map(rp => {
+                  const rWorker = workers.find(w => w.id === rp.workerId);
+                  if (!rWorker) return null;
+                  return (
+                    <div key={rp.id} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      {rWorker.photo ? (
+                        <img src={rWorker.photo} alt={rWorker.name} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.85rem', color: '#475569' }}>{rWorker.name?.[0]}</div>
+                      )}
+                      <div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a' }}>{rWorker.name}</div>
+                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{rWorker.email} | {rWorker.phone}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Supervisor Column */}
@@ -250,9 +268,9 @@ function CompanyDetailsModal({ company, onClose, companies }) {
             <div>
               <strong style={{ color: '#64748b' }}>Hierarchy Routing:</strong> {parent ? `Linked to Partner: ${parent.name}` : 'Direct CEVA Relationship'}
             </div>
-            
+
             <div style={{ borderTop: '1px solid #e2e8f0', margin: '6px 0' }} />
-            
+
             <div>
               <strong style={{ color: '#64748b' }}>Corporate Registry Type:</strong> {company.bizRegType || 'SSM (Malaysia)'}
             </div>
@@ -281,7 +299,7 @@ function CompanyDetailsModal({ company, onClose, companies }) {
             )}
 
             <div style={{ borderTop: '1px solid #e2e8f0', margin: '6px 0' }} />
-            
+
             <div>
               <strong style={{ color: '#64748b' }}>Cargo Insurance Policy:</strong> {company.insurancePolicy ? `${company.insurancePolicy} (Limit: ${company.insuranceAmount || 'N/A'})` : 'No cargo policy on file'}
             </div>
@@ -290,7 +308,7 @@ function CompanyDetailsModal({ company, onClose, companies }) {
             </div>
 
             <div style={{ borderTop: '1px solid #e2e8f0', margin: '6px 0' }} />
-            
+
             <div>
               <strong style={{ color: '#64748b' }}>Safety Certifications:</strong>
               {certs.length > 0 ? (
@@ -322,7 +340,7 @@ function CompanyDetailsModal({ company, onClose, companies }) {
 export default function CompanyAdminDashboard({ view }) {
   const {
     companies, verifyCompany, workers, verifyWorker, deleteWorker,
-    passes, approvePassVendor, registerWorker, requestPass,
+    passes, approvePassVendor, approvePassVendorBulk, registerWorker, requestPass,
     supervisors = [], registerSupervisor, verifySupervisor, deleteSupervisor, logs = [],
     trucks = [], drivers = [], deliveries = [],
   } = useSystem();
@@ -343,42 +361,43 @@ export default function CompanyAdminDashboard({ view }) {
   const subPending = companies.filter(c => c.type === 'trucking' && c.parentCompanyId === selectedCompanyId && c.status === 'pending_vendor');
 
   /* Worker form */
-  const [wName,       setWName]       = useState('');
-  const [wEmail,      setWEmail]      = useState('');
-  const [wPhone,      setWPhone]      = useState('');
+  const [wName, setWName] = useState('');
+  const [wEmail, setWEmail] = useState('');
+  const [wPhone, setWPhone] = useState('');
   const [wSupervisor, setWSupervisor] = useState('');
-  const [wPhoto,      setWPhoto]      = useState('');
-  const [wMsg,        setWMsg]        = useState('');
+  const [wPhoto, setWPhoto] = useState('');
+  const [wMsg, setWMsg] = useState('');
 
   /* Supervisor form */
-  const [sName,  setSName]  = useState('');
+  const [sName, setSName] = useState('');
   const [sEmail, setSEmail] = useState('');
   const [sPhone, setSPhone] = useState('');
   const [sPhoto, setSPhoto] = useState('');
-  const [sMsg,   setSMsg]   = useState('');
+  const [sMsg, setSMsg] = useState('');
 
   /* Gate Pass form */
-  const [passWorkerId,  setPassWorkerId]  = useState('');
-  const [passZone,      setPassZone]      = useState('Zone A - Warehouse Floor');
+  const [passWorkerIds, setPassWorkerIds] = useState([]);
+  const [passZone, setPassZone] = useState('Zone A - Warehouse Floor');
   const [passStartDate, setPassStartDate] = useState('');
-  const [passEndDate,   setPassEndDate]   = useState('');
+  const [passEndDate, setPassEndDate] = useState('');
   const [passStartTime, setPassStartTime] = useState('08:00');
-  const [passEndTime,   setPassEndTime]   = useState('17:00');
-  const [passPurpose,   setPassPurpose]   = useState('');
+  const [passEndTime, setPassEndTime] = useState('17:00');
+  const [passPurpose, setPassPurpose] = useState('');
   const [passSupervisor, setPassSupervisor] = useState('');
-  const [passMsg,       setPassMsg]       = useState('');
-  const [selectedPass,  setSelectedPass]  = useState(null);
+  const [passMsg, setPassMsg] = useState('');
+  const [selectedPass, setSelectedPass] = useState(null);
   const [selectedWorker, setSelectedWorker] = useState(null);
   const [selectedSupervisor, setSelectedSupervisor] = useState(null);
+  const [workerSupervisors, setWorkerSupervisors] = useState({});
 
-  const currentCompany      = companies.find(c => c.id === selectedCompanyId);
-  const companyWorkers      = workers.filter(w => w.companyId === selectedCompanyId);
-  const pendingWorkers      = companyWorkers.filter(w => w.status === 'pending');
-  const verifiedWorkers     = companyWorkers.filter(w => w.status === 'approved');
-  const pendingPasses       = passes.filter(p => p.companyId === selectedCompanyId && p.status === 'pending_vendor');
+  const currentCompany = companies.find(c => c.id === selectedCompanyId);
+  const companyWorkers = workers.filter(w => w.companyId === selectedCompanyId);
+  const pendingWorkers = companyWorkers.filter(w => w.status === 'pending');
+  const verifiedWorkers = companyWorkers.filter(w => w.status === 'approved');
+  const pendingPasses = passes.filter(p => p.companyId === selectedCompanyId && p.status === 'pending_vendor');
   const companyPendingPasses = passes.filter(p => p.companyId === selectedCompanyId && (p.status === 'pending_vendor' || p.status === 'pending_ceva'));
-  const allCompanyPasses    = passes.filter(p => p.companyId === selectedCompanyId);
-  const companySupervisors  = supervisors.filter(s => s.companyId === selectedCompanyId);
+  const allCompanyPasses = passes.filter(p => p.companyId === selectedCompanyId);
+  const companySupervisors = supervisors.filter(s => s.companyId === selectedCompanyId);
   const approvedSupervisors = companySupervisors.filter(s => s.status === 'approved');
 
   const handleAddWorker = (e) => {
@@ -387,7 +406,7 @@ export default function CompanyAdminDashboard({ view }) {
     if (!wName || !wSupervisor) { setWMsg('Name and Supervisor are required.'); return; }
     registerWorker(
       wName, selectedCompanyId, wSupervisor,
-      wEmail || `${wName.toLowerCase().replace(/\s+/g,'_')}@vendor.com`,
+      wEmail || `${wName.toLowerCase().replace(/\s+/g, '_')}@vendor.com`,
       wPhone || '+1 555-0000',
       wPhoto
     );
@@ -408,12 +427,14 @@ export default function CompanyAdminDashboard({ view }) {
 
   const handleRequestPass = (e) => {
     e.preventDefault();
-    if (!passWorkerId || !passStartDate || !passEndDate || !passPurpose || !passSupervisor) {
-      setPassMsg('All fields are required.'); return;
+    if (passWorkerIds.length === 0 || !passStartDate || !passEndDate || !passPurpose || !passSupervisor) {
+      setPassMsg('All fields are required and at least one worker must be selected.'); return;
     }
-    requestPass(passWorkerId, passZone, passStartDate, passEndDate, passStartTime, passEndTime, passPurpose, passSupervisor);
-    setPassWorkerId(''); setPassPurpose(''); setPassSupervisor('');
-    setPassMsg('Gate pass request submitted for Ceva review.');
+    passWorkerIds.forEach(workerId => {
+      requestPass(workerId, passZone, passStartDate, passEndDate, passStartTime, passEndTime, passPurpose, passSupervisor);
+    });
+    setPassWorkerIds([]); setPassPurpose(''); setPassSupervisor('');
+    setPassMsg(`Gate pass request submitted for Ceva review for ${passWorkerIds.length} worker(s).`);
     setTimeout(() => setPassMsg(''), 4000);
   };
 
@@ -479,7 +500,7 @@ export default function CompanyAdminDashboard({ view }) {
       <div className="stats-row cols-4" style={{ marginBottom: 20 }}>
         <div className="stat-card">
           <div className="stat-icon blue">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /></svg>
           </div>
           <div className="stat-body">
             <div className="stat-value">{companyWorkers.length}</div>
@@ -506,7 +527,7 @@ export default function CompanyAdminDashboard({ view }) {
         </div>
         <div className="stat-card">
           <div className="stat-icon amber">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" /></svg>
           </div>
           <div className="stat-body">
             <div className="stat-value">{companyPendingPasses.length}</div>
@@ -517,547 +538,671 @@ export default function CompanyAdminDashboard({ view }) {
 
       {view !== '3pl' ? (
         <div className="content-grid">
-        {/* Left Column / Primary Content */}
-        <div>
-          {/* Dashboard View: Active On-Site Roster */}
-          {view === 'dashboard' && (
-            <div className="panel">
-              <div className="panel-header">
-                <span className="panel-title">Active On-Site Roster</span>
-                <span className="panel-badge">
-                  {allCompanyPasses.filter(p => p.checkedIn && !p.checkedOut).length} Present
-                </span>
-              </div>
-              {allCompanyPasses.filter(p => p.checkedIn && !p.checkedOut).length === 0 ? (
-                <div className="panel-body">
-                  <div className="empty-state">
-                    <div className="empty-state-title">No Workers Currently On-Site</div>
-                    <div className="empty-state-desc">Workers registered under your company will appear here once they check in at the gate.</div>
-                  </div>
+          {/* Left Column / Primary Content */}
+          <div style={{ gridColumn: view === 'verify' ? 'span 2' : 'span 1' }}>
+            {/* Dashboard View: Active On-Site Roster */}
+            {view === 'dashboard' && (
+              <div className="panel">
+                <div className="panel-header">
+                  <span className="panel-title">Active On-Site Roster</span>
+                  <span className="panel-badge">
+                    {allCompanyPasses.filter(p => p.checkedIn && !p.checkedOut).length} Present
+                  </span>
                 </div>
-              ) : (
-                <div className="panel-body-flush">
-                  <table className="data-table">
-                    <thead>
-                      <tr><th>Worker</th><th>Supervisor</th><th>Clearance Zone</th><th>Dates</th></tr>
-                    </thead>
-                    <tbody>
-                      {allCompanyPasses.filter(p => p.checkedIn && !p.checkedOut).map(p => {
-                        const worker = workers.find(w => w.id === p.workerId);
-                        return (
-                          <tr key={p.id}>
-                            <td>
-                              <div className="cell-primary">{worker?.name || 'Unknown'}</div>
-                              <div className="cell-secondary">{worker?.email || ''}</div>
-                            </td>
-                            <td><div className="cell-secondary">{p.supervisorName}</div></td>
-                            <td><span className="zone-badge">{p.zoneLevel}</span></td>
-                            <td><div className="cell-secondary">{p.startDate} – {p.endDate}</div></td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Supervisors View: Roster */}
-          {view === 'supervisors' && (
-            <div className="panel">
-              <div className="panel-header">
-                <span className="panel-title">Approved Supervisors Roster</span>
-                <span className="panel-badge">{companySupervisors.length} Registered</span>
-              </div>
-              {companySupervisors.length === 0 ? (
-                <div className="panel-body">
-                  <div className="empty-state">
-                    <div className="empty-state-title">No Registered Supervisors</div>
-                    <div className="empty-state-desc">Use the form on the right to register supervisors for your organization.</div>
-                  </div>
-                </div>
-              ) : (
-                <div className="panel-body-flush">
-                  <table className="data-table">
-                    <thead>
-                      <tr><th>Supervisor</th><th>Contact Email</th><th>Phone</th><th>Status</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody>
-                      {companySupervisors.map(s => (
-                        <tr key={s.id}>
-                          <td><div className="cell-primary">{s.name}</div></td>
-                          <td><div className="cell-secondary">{s.email}</div></td>
-                          <td><div className="cell-secondary">{s.phone || 'N/A'}</div></td>
-                          <td><StatusPill status={s.status} /></td>
-                          <td>
-                            <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedSupervisor(s)}>View Details</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Worker Profile Verification */}
-          {(!view || view === 'verify') && (
-            <div className="panel" style={{ marginBottom: 20 }}>
-              <div className="panel-header">
-                <span className="panel-title">Worker Profile Verification</span>
-                <span className="panel-badge">{pendingWorkers.length} Pending</span>
-              </div>
-              {pendingWorkers.length === 0 ? (
-                <div className="panel-body">
-                  <div className="empty-state">
-                    <div className="empty-state-title">All Profiles Verified</div>
-                    <div className="empty-state-desc">No workers are awaiting profile verification.</div>
-                  </div>
-                </div>
-              ) : (
-                <div className="panel-body-flush">
-                  <table className="data-table">
-                    <thead>
-                      <tr><th>Worker</th><th>Supervisor</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody>
-                      {pendingWorkers.map(w => (
-                        <tr key={w.id}>
-                          <td>
-                            <div className="cell-with-avatar">
-                              {w.photo
-                                ? <img src={w.photo} alt={w.name} className="cell-avatar" />
-                                : <div className="cell-avatar-initials">{w.name?.[0]}</div>
-                              }
-                              <div>
-                                <div className="cell-primary">{w.name}</div>
-                                <div className="cell-secondary">{w.email}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td><div className="cell-secondary">{w.supervisorName}</div></td>
-                          <td>
-                            <div className="actions-cell">
-                              <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedWorker(w)}>View Details</button>
-                              <button className="btn-action btn-approve" onClick={() => verifyWorker(w.id, true)}>Verify</button>
-                              <button className="btn-action btn-reject" onClick={() => verifyWorker(w.id, false)}>Reject</button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Initial Pass Verification - Step 1 */}
-          {(!view || view === 'verify') && (
-            <div className="panel" style={{ marginBottom: 20 }}>
-              <div className="panel-header">
-                <span className="panel-title">Pass Verification — Step 1 (Vendor Review)</span>
-                <span className="panel-badge">{pendingPasses.length} Pending</span>
-              </div>
-              {pendingPasses.length === 0 ? (
-                <div className="panel-body">
-                  <div className="empty-state">
-                    <div className="empty-state-title">No Pending Pass Requests</div>
-                    <div className="empty-state-desc">No gate pass requests awaiting initial review.</div>
-                  </div>
-                </div>
-              ) : (
-                <div className="panel-body-flush">
-                  <table className="data-table">
-                    <thead>
-                      <tr><th>Pass ID</th><th>Worker</th><th>Zone</th><th>Dates</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody>
-                      {pendingPasses.map(p => {
-                        const worker = workers.find(w => w.id === p.workerId);
-                        return (
-                          <tr key={p.id}>
-                            <td><div className="cell-mono cell-secondary">#{p.id.slice(-6)}</div></td>
-                            <td><div className="cell-primary">{worker?.name || 'Unknown'}</div></td>
-                            <td><span className="zone-badge">{p.zoneLevel}</span></td>
-                            <td><div className="cell-secondary">{p.startDate} – {p.endDate}</div></td>
-                            <td>
-                              <div className="actions-cell">
-                                <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedPass(p)}>View Details</button>
-                                <button className="btn-action btn-approve" onClick={() => approvePassVendor(p.id, true)}>Verify & Forward</button>
-                                <button className="btn-action btn-reject" onClick={() => approvePassVendor(p.id, false)}>Reject</button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Sub-Contractor Routing Approvals for Parent Vendors */}
-          {(!view || view === 'verify') && subPending.length > 0 && (
-            <div className="panel" style={{ marginBottom: 20 }}>
-              <div className="panel-header">
-                <span className="panel-title">Sub-Contractor Routing Approvals (3PL Partners)</span>
-                <span className="panel-badge">{subPending.length} Pending</span>
-              </div>
-              <div className="panel-body-flush">
-                <table className="data-table">
-                  <thead>
-                    <tr><th>Company</th><th>Contact</th><th>Actions</th></tr>
-                  </thead>
-                  <tbody>
-                    {subPending.map(c => (
-                      <tr key={c.id}>
-                        <td><div className="cell-primary">{c.name}</div></td>
-                        <td><div className="cell-secondary">{c.email}</div></td>
-                        <td>
-                          <div className="actions-cell">
-                            <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedCompany(c)}>View Details</button>
-                            <button className="btn-action btn-approve" onClick={() => verifyCompany(c.id, true)}>Approve & Route</button>
-                            <button className="btn-action btn-reject" onClick={() => verifyCompany(c.id, false)}>Reject</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Verified Worker Roster */}
-          {(!view || view === 'workers') && (
-            <div className="panel">
-              <div className="panel-header">
-                <span className="panel-title">Verified Worker Roster</span>
-                <span className="panel-badge">{verifiedWorkers.length} Workers</span>
-              </div>
-              {verifiedWorkers.length === 0 ? (
-                <div className="panel-body">
-                  <div className="empty-state">
-                    <div className="empty-state-title">No Verified Workers</div>
-                    <div className="empty-state-desc">Verify worker profiles above to populate the roster.</div>
-                  </div>
-                </div>
-              ) : (
-                <div className="panel-body-flush">
-                  <table className="data-table">
-                    <thead>
-                      <tr><th>Worker</th><th>Contact</th><th>Supervisor</th><th>Status</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody>
-                      {verifiedWorkers.map(w => (
-                        <tr key={w.id}>
-                          <td>
-                            <div className="cell-with-avatar">
-                              {w.photo
-                                ? <img src={w.photo} alt={w.name} className="cell-avatar" />
-                                : <div className="cell-avatar-initials">{w.name?.[0]}</div>
-                              }
-                              <div>
-                                <div className="cell-primary">{w.name}</div>
-                                <div className="cell-secondary">{w.email}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td><div className="cell-secondary">{w.phone}</div></td>
-                          <td><div className="cell-secondary">{w.supervisorName}</div></td>
-                          <td><StatusPill status={w.status} /></td>
-                          <td>
-                            <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedWorker(w)}>View Details</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Company Passes Registry / History */}
-          {view === 'passes' && (
-            <div className="panel">
-              <div className="panel-header">
-                <span className="panel-title">Gate Pass Registry / History</span>
-                <span className="panel-badge">{allCompanyPasses.length} Passes</span>
-              </div>
-              {allCompanyPasses.length === 0 ? (
-                <div className="panel-body">
-                  <div className="empty-state">
-                    <div className="empty-state-title">No Passes Requested</div>
-                    <div className="empty-state-desc">Use the form on the right to submit pass requests.</div>
-                  </div>
-                </div>
-              ) : (
-                <div className="panel-body-flush">
-                  <table className="data-table">
-                    <thead>
-                      <tr><th>Pass ID</th><th>Worker</th><th>Zone</th><th>Dates</th><th>Status</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody>
-                      {allCompanyPasses.map(p => {
-                        const worker = workers.find(w => w.id === p.workerId);
-                        return (
-                          <tr key={p.id}>
-                            <td><div className="cell-mono cell-secondary">#{p.id.slice(-6)}</div></td>
-                            <td><div className="cell-primary">{worker?.name || 'Unknown'}</div></td>
-                            <td><span className="zone-badge">{p.zoneLevel}</span></td>
-                            <td><div className="cell-secondary">{p.startDate} – {p.endDate}</div></td>
-                            <td><StatusPill status={p.status} /></td>
-                            <td>
-                              <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedPass(p)}>View Details</button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Right Column / Forms */}
-        <div>
-          {/* Dashboard View: Live Scoped Entrance Logs */}
-          {view === 'dashboard' && (
-            <div className="log-console-panel">
-              <div className="log-console-header">
-                <div className="log-live-dot" />
-                <span className="log-console-label">Facility Entrance Logs</span>
-              </div>
-              <div className="log-console-body" style={{ height: 380 }}>
-                {logs.filter(l => l.companyName === currentCompany?.name).length === 0 ? (
-                  <div className="log-empty">No entrance events recorded for your workers.</div>
-                ) : (
-                  logs.filter(l => l.companyName === currentCompany?.name).map(log => (
-                    <div key={log.id} className="log-line">
-                      <span className="log-ts">[{log.timestamp}]</span>
-                      <span className={log.action === 'check_in' ? 'log-entry-text' : 'log-exit-text'}>
-                        {log.action === 'check_in' ? 'CHECK-IN' : 'CHECK-OUT'}
-                      </span>
-                      <span className="log-name">{log.workerName}</span>
+                {allCompanyPasses.filter(p => p.checkedIn && !p.checkedOut).length === 0 ? (
+                  <div className="panel-body">
+                    <div className="empty-state">
+                      <div className="empty-state-title">No Workers Currently On-Site</div>
+                      <div className="empty-state-desc">Workers registered under your company will appear here once they check in at the gate.</div>
                     </div>
-                  ))
+                  </div>
+                ) : (
+                  <div className="panel-body-flush">
+                    <table className="data-table">
+                      <thead>
+                        <tr><th>Worker</th><th>Supervisor</th><th>Clearance Zone</th><th>Dates</th></tr>
+                      </thead>
+                      <tbody>
+                        {allCompanyPasses.filter(p => p.checkedIn && !p.checkedOut).map(p => {
+                          const worker = workers.find(w => w.id === p.workerId);
+                          return (
+                            <tr key={p.id}>
+                              <td>
+                                <div className="cell-primary">{worker?.name || 'Unknown'}</div>
+                                <div className="cell-secondary">{worker?.email || ''}</div>
+                              </td>
+                              <td><div className="cell-secondary">{p.supervisorName}</div></td>
+                              <td><span className="zone-badge">{p.zoneLevel}</span></td>
+                              <td><div className="cell-secondary">{p.startDate} – {p.endDate}</div></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Supervisors View: Register New Supervisor */}
-          {view === 'supervisors' && (
-            <div className="form-panel">
-              <div className="form-panel-header">
-                <div className="form-panel-title">Add Approved Supervisor</div>
-                <div className="form-panel-desc">Register a new company supervisor. They will be immediately available.</div>
-              </div>
-              <div className="form-panel-body">
-                <form onSubmit={handleAddSupervisor} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div className="field-group">
-                    <label>Full Name *</label>
-                    <input type="text" placeholder="e.g. Robert Downey" value={sName} onChange={e => setSName(e.target.value)} required />
-                  </div>
-                  <div className="field-group">
-                    <label>Email Address *</label>
-                    <input type="email" placeholder="robert@company.com" value={sEmail} onChange={e => setSEmail(e.target.value)} required />
-                  </div>
-                  <div className="field-group">
-                    <label>Phone Number</label>
-                    <input type="text" placeholder="+1 555-0100" value={sPhone} onChange={e => setSPhone(e.target.value)} />
-                  </div>
-                  <div className="field-group">
-                    <label>Profile Photo</label>
-                    <div className="photo-upload-zone">
-                      {sPhoto ? (
-                        <div className="photo-upload-preview-wrap">
-                          <img src={sPhoto} className="photo-upload-preview" alt="Preview" />
-                          <button type="button" className="photo-upload-remove-btn" onClick={() => setSPhoto('')}>&times;</button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="photo-upload-text">
-                            <strong>Click to upload</strong> or drag and drop
-                          </div>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>PNG, JPG or GIF</span>
-                        </>
-                      )}
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        className="photo-upload-input" 
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => setSPhoto(reader.result);
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
+            {/* Supervisors View: Roster */}
+            {view === 'supervisors' && (
+              <div className="panel">
+                <div className="panel-header">
+                  <span className="panel-title">Approved Supervisors Roster</span>
+                  <span className="panel-badge">{companySupervisors.length} Registered</span>
+                </div>
+                {companySupervisors.length === 0 ? (
+                  <div className="panel-body">
+                    <div className="empty-state">
+                      <div className="empty-state-title">No Registered Supervisors</div>
+                      <div className="empty-state-desc">Use the form on the right to register supervisors for your organization.</div>
                     </div>
                   </div>
-                  <button type="submit" className="btn-primary">Add Supervisor</button>
-                  {sMsg && <div className="form-feedback-success">{sMsg}</div>}
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* Register New Worker */}
-          {(!view || view === 'workers') && (
-            <div className="form-panel" style={{ marginBottom: 20 }}>
-              <div className="form-panel-header">
-                <div className="form-panel-title">Register New Worker</div>
-                <div className="form-panel-desc">New workers require profile verification before gate pass requests.</div>
-              </div>
-              <div className="form-panel-body">
-                <form onSubmit={handleAddWorker} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div className="fields-row">
-                    <div className="field-group">
-                      <label>Full Name *</label>
-                      <input type="text" placeholder="John Smith" value={wName} onChange={e => setWName(e.target.value)} required />
-                    </div>
-                    <div className="field-group">
-                      <label>Approved Supervisor *</label>
-                      <select value={wSupervisor} onChange={e => setWSupervisor(e.target.value)} required>
-                        <option value="">-- Choose Supervisor --</option>
-                        {approvedSupervisors.map(s => (
-                          <option key={s.id} value={s.name}>{s.name} ({s.email})</option>
+                ) : (
+                  <div className="panel-body-flush">
+                    <table className="data-table">
+                      <thead>
+                        <tr><th>Supervisor</th><th>Contact Email</th><th>Phone</th><th>Status</th><th>Actions</th></tr>
+                      </thead>
+                      <tbody>
+                        {companySupervisors.map(s => (
+                          <tr key={s.id}>
+                            <td><div className="cell-primary">{s.name}</div></td>
+                            <td><div className="cell-secondary">{s.email}</div></td>
+                            <td><div className="cell-secondary">{s.phone || 'N/A'}</div></td>
+                            <td><StatusPill status={s.status} /></td>
+                            <td>
+                              <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedSupervisor(s)}>View Details</button>
+                            </td>
+                          </tr>
                         ))}
-                      </select>
-                    </div>
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="fields-row">
-                    <div className="field-group">
-                      <label>Email Address</label>
-                      <input type="email" placeholder="john@vendor.com" value={wEmail} onChange={e => setWEmail(e.target.value)} />
-                    </div>
-                    <div className="field-group">
-                      <label>Phone Number</label>
-                      <input type="text" placeholder="+1 555-1234" value={wPhone} onChange={e => setWPhone(e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="field-group">
-                    <label>Profile Photo</label>
-                    <div className="photo-upload-zone">
-                      {wPhoto ? (
-                        <div className="photo-upload-preview-wrap">
-                          <img src={wPhoto} className="photo-upload-preview" alt="Preview" />
-                          <button type="button" className="photo-upload-remove-btn" onClick={() => setWPhoto('')}>&times;</button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="photo-upload-text">
-                            <strong>Click to upload</strong> or drag and drop
-                          </div>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>PNG, JPG or GIF</span>
-                        </>
-                      )}
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        className="photo-upload-input" 
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => setWPhoto(reader.result);
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <button type="submit" className="btn-primary">Register Worker</button>
-                  {wMsg && <div className="form-feedback-success">{wMsg}</div>}
-                </form>
+                )}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Request Gate Pass */}
-          {view === 'passes' && (
-            <div className="form-panel" style={{ marginBottom: 20 }}>
-              <div className="form-panel-header">
-                <div className="form-panel-title">Request Gate Pass</div>
-                <div className="form-panel-desc">Only verified workers can be selected for a gate pass request.</div>
+            {/* Worker Profile Verification */}
+            {(!view || view === 'verify') && (
+              <div className="panel" style={{ marginBottom: 20 }}>
+                <div className="panel-header">
+                  <span className="panel-title">Worker Profile Verification</span>
+                  <span className="panel-badge">{pendingWorkers.length} Pending</span>
+                </div>
+                {pendingWorkers.length === 0 ? (
+                  <div className="panel-body">
+                    <div className="empty-state">
+                      <div className="empty-state-title">All Profiles Verified</div>
+                      <div className="empty-state-desc">No workers are awaiting profile verification.</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="panel-body-flush">
+                    <table className="data-table">
+                      <thead>
+                        <tr><th>Worker</th><th>Supervisor</th><th>Actions</th></tr>
+                      </thead>
+                      <tbody>
+                        {pendingWorkers.map(w => (
+                          <tr key={w.id}>
+                            <td>
+                              <div className="cell-with-avatar">
+                                {w.photo
+                                  ? <img src={w.photo} alt={w.name} className="cell-avatar" />
+                                  : <div className="cell-avatar-initials">{w.name?.[0]}</div>
+                                }
+                                <div>
+                                  <div className="cell-primary">{w.name}</div>
+                                  <div className="cell-secondary">{w.email}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              <select
+                                value={workerSupervisors[w.id] || (w.supervisorName !== 'Pending Assignment' ? w.supervisorName : '')}
+                                onChange={(e) => setWorkerSupervisors(prev => ({ ...prev, [w.id]: e.target.value }))}
+                                style={{
+                                  padding: '6px 10px',
+                                  borderRadius: '6px',
+                                  border: '1.5px solid #cbd5e1',
+                                  fontSize: '0.85rem',
+                                  fontWeight: 500,
+                                  background: '#fff',
+                                  color: '#0f172a',
+                                  width: '100%',
+                                  maxWidth: '220px'
+                                }}
+                              >
+                                <option value="">-- Assign Supervisor --</option>
+                                {approvedSupervisors.map(s => (
+                                  <option key={s.id} value={s.name}>{s.name}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td>
+                              <div className="actions-cell">
+                                <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedWorker(w)}>View Details</button>
+                                <button
+                                  className="btn-action btn-approve"
+                                  onClick={() => {
+                                    const assignedSup = workerSupervisors[w.id] || (w.supervisorName !== 'Pending Assignment' ? w.supervisorName : '');
+                                    if (!assignedSup) {
+                                      alert(`Please assign a supervisor for ${w.name} before verifying.`);
+                                      return;
+                                    }
+                                    verifyWorker(w.id, true, assignedSup);
+                                  }}
+                                >
+                                  Verify
+                                </button>
+                                <button className="btn-action btn-reject" onClick={() => verifyWorker(w.id, false)}>Reject</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-              <div className="form-panel-body">
-                <form onSubmit={handleRequestPass} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div className="fields-row">
-                    <div className="field-group">
-                      <label>Select Worker *</label>
-                      <select value={passWorkerId} onChange={e => setPassWorkerId(e.target.value)} required>
-                        <option value="">-- Choose Worker --</option>
+            )}
+
+            {/* Initial Pass Verification - Step 1 */}
+            {(!view || view === 'verify') && (() => {
+              const getGroupedPendingPasses = (passesList) => {
+                const groups = {};
+                passesList.forEach(p => {
+                  const key = `${p.companyId}_${p.supervisorName}_${p.zoneLevel}_${p.startDate}_${p.endDate}_${p.startTime}_${p.endTime}_${p.purpose}`;
+                  if (!groups[key]) {
+                    groups[key] = [];
+                  }
+                  groups[key].push(p);
+                });
+                return Object.values(groups).map(group => ({
+                  id: group[0].id,
+                  companyId: group[0].companyId,
+                  supervisorName: group[0].supervisorName,
+                  zoneLevel: group[0].zoneLevel,
+                  startDate: group[0].startDate,
+                  endDate: group[0].endDate,
+                  startTime: group[0].startTime,
+                  endTime: group[0].endTime,
+                  purpose: group[0].purpose,
+                  passes: group
+                }));
+              };
+              const groupedPendingPasses = getGroupedPendingPasses(pendingPasses);
+
+              return (
+                <div className="panel" style={{ marginBottom: 20 }}>
+                  <div className="panel-header">
+                    <span className="panel-title">Pass Verification — Step 1 (Vendor Review)</span>
+                    <span className="panel-badge">{pendingPasses.length} Pending</span>
+                  </div>
+                  {pendingPasses.length === 0 ? (
+                    <div className="panel-body">
+                      <div className="empty-state">
+                        <div className="empty-state-title">No Pending Pass Requests</div>
+                        <div className="empty-state-desc">No gate pass requests awaiting initial review.</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="panel-body-flush">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Pass ID</th>
+                            <th>Worker(s)</th>
+                            <th>Supervisor</th>
+                            <th>Zone</th>
+                            <th>Dates</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {groupedPendingPasses.map(g => {
+                            const isGroup = g.passes.length > 1;
+                            const workerNames = g.passes.map(p => {
+                              const w = workers.find(wk => wk.id === p.workerId);
+                              return w ? w.name : 'Unknown';
+                            }).filter(Boolean);
+                            const passIds = g.passes.map(p => p.id);
+
+                            return (
+                              <tr key={g.id}>
+                                <td>
+                                  <div className="cell-mono cell-secondary">
+                                    {isGroup ? `[${g.passes.length} Passes]` : `#${g.id.slice(-6)}`}
+                                  </div>
+                                </td>
+                                <td>
+                                  <div className="cell-primary" style={{ whiteSpace: 'normal', maxWidth: '300px' }}>
+                                    {isGroup ? (
+                                      <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                                        👥 {workerNames.join(', ')}
+                                      </span>
+                                    ) : (
+                                      workerNames[0] || 'Unknown'
+                                    )}
+                                  </div>
+                                </td>
+                                <td>
+                                  <div className="cell-secondary" style={{ fontWeight: 500, color: '#475569' }}>
+                                    👤 {g.supervisorName || 'N/A'}
+                                  </div>
+                                </td>
+                                <td><span className="zone-badge">{g.zoneLevel}</span></td>
+                                <td><div className="cell-secondary">{g.startDate} – {g.endDate}</div></td>
+                                <td>
+                                  <div className="actions-cell">
+                                    {isGroup ? (
+                                      <>
+                                        <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedPass(g.passes[0])}>View Details</button>
+                                        <button className="btn-action btn-approve" onClick={() => approvePassVendorBulk(passIds, true)}>Verify & Forward All</button>
+                                        <button className="btn-action btn-reject" onClick={() => approvePassVendorBulk(passIds, false)}>Reject All</button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedPass(g.passes[0])}>View Details</button>
+                                        <button className="btn-action btn-approve" onClick={() => approvePassVendor(g.id, true)}>Verify & Forward</button>
+                                        <button className="btn-action btn-reject" onClick={() => approvePassVendor(g.id, false)}>Reject</button>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Sub-Contractor Routing Approvals for Parent Vendors */}
+            {(!view || view === 'verify') && subPending.length > 0 && (
+              <div className="panel" style={{ marginBottom: 20 }}>
+                <div className="panel-header">
+                  <span className="panel-title">Sub-Contractor Routing Approvals (3PL Partners)</span>
+                  <span className="panel-badge">{subPending.length} Pending</span>
+                </div>
+                <div className="panel-body-flush">
+                  <table className="data-table">
+                    <thead>
+                      <tr><th>Company</th><th>Contact</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                      {subPending.map(c => (
+                        <tr key={c.id}>
+                          <td><div className="cell-primary">{c.name}</div></td>
+                          <td><div className="cell-secondary">{c.email}</div></td>
+                          <td>
+                            <div className="actions-cell">
+                              <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedCompany(c)}>View Details</button>
+                              <button className="btn-action btn-approve" onClick={() => verifyCompany(c.id, true)}>Approve & Route</button>
+                              <button className="btn-action btn-reject" onClick={() => verifyCompany(c.id, false)}>Reject</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Verified Worker Roster */}
+            {(!view || view === 'workers') && (
+              <div className="panel">
+                <div className="panel-header">
+                  <span className="panel-title">Verified Worker Roster</span>
+                  <span className="panel-badge">{verifiedWorkers.length} Workers</span>
+                </div>
+                {verifiedWorkers.length === 0 ? (
+                  <div className="panel-body">
+                    <div className="empty-state">
+                      <div className="empty-state-title">No Verified Workers</div>
+                      <div className="empty-state-desc">Verify worker profiles above to populate the roster.</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="panel-body-flush">
+                    <table className="data-table">
+                      <thead>
+                        <tr><th>Worker</th><th>Contact</th><th>Supervisor</th><th>Status</th><th>Actions</th></tr>
+                      </thead>
+                      <tbody>
                         {verifiedWorkers.map(w => (
-                          <option key={w.id} value={w.id}>{w.name}</option>
+                          <tr key={w.id}>
+                            <td>
+                              <div className="cell-with-avatar">
+                                {w.photo
+                                  ? <img src={w.photo} alt={w.name} className="cell-avatar" />
+                                  : <div className="cell-avatar-initials">{w.name?.[0]}</div>
+                                }
+                                <div>
+                                  <div className="cell-primary">{w.name}</div>
+                                  <div className="cell-secondary">{w.email}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td><div className="cell-secondary">{w.phone}</div></td>
+                            <td><div className="cell-secondary">{w.supervisorName}</div></td>
+                            <td><StatusPill status={w.status} /></td>
+                            <td>
+                              <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedWorker(w)}>View Details</button>
+                            </td>
+                          </tr>
                         ))}
-                      </select>
-                    </div>
-                    <div className="field-group">
-                      <label>Designated Supervisor *</label>
-                      <select value={passSupervisor} onChange={e => setPassSupervisor(e.target.value)} required>
-                        <option value="">-- Select Approved Supervisor --</option>
-                        {approvedSupervisors.map(s => (
-                          <option key={s.id} value={s.name}>{s.name} ({s.email})</option>
-                        ))}
-                      </select>
-                    </div>
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="fields-row">
-                    <div className="field-group">
-                      <label>Access Zone *</label>
-                      <select value={passZone} onChange={e => setPassZone(e.target.value)}>
-                        <option value="Zone A - Warehouse Floor">Zone A - Warehouse Floor</option>
-                        <option value="Zone B - Cargo Loading">Zone B - Cargo Loading</option>
-                        <option value="Zone C - Administration">Zone C - Administration</option>
-                      </select>
-                    </div>
-                    <div className="field-group">
-                      {/* Empty field group to preserve 50/50 layout spacing */}
-                    </div>
-                  </div>
-                  <div className="fields-row">
-                    <div className="field-group">
-                      <label>Start Date *</label>
-                      <input type="date" value={passStartDate} onChange={e => setPassStartDate(e.target.value)} required />
-                    </div>
-                    <div className="field-group">
-                      <label>End Date *</label>
-                      <input type="date" value={passEndDate} onChange={e => setPassEndDate(e.target.value)} required />
-                    </div>
-                  </div>
-                  <div className="fields-row">
-                    <div className="field-group">
-                      <label>Shift Start</label>
-                      <input type="time" value={passStartTime} onChange={e => setPassStartTime(e.target.value)} />
-                    </div>
-                    <div className="field-group">
-                      <label>Shift End</label>
-                      <input type="time" value={passEndTime} onChange={e => setPassEndTime(e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="field-group">
-                    <label>Purpose of Visit *</label>
-                    <input type="text" placeholder="e.g. Server rack repair" value={passPurpose} onChange={e => setPassPurpose(e.target.value)} required />
-                  </div>
-                  <button type="submit" className="btn-primary">Submit Pass Request</button>
-                  {passMsg && <div className="form-feedback-success">{passMsg}</div>}
-                </form>
+                )}
               </div>
+            )}
+
+            {/* Company Passes Registry / History */}
+            {view === 'passes' && (
+              <div className="panel">
+                <div className="panel-header">
+                  <span className="panel-title">Gate Pass Registry / History</span>
+                  <span className="panel-badge">{allCompanyPasses.length} Passes</span>
+                </div>
+                {allCompanyPasses.length === 0 ? (
+                  <div className="panel-body">
+                    <div className="empty-state">
+                      <div className="empty-state-title">No Passes Requested</div>
+                      <div className="empty-state-desc">Use the form on the right to submit pass requests.</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="panel-body-flush">
+                    <table className="data-table">
+                      <thead>
+                        <tr><th>Pass ID</th><th>Worker</th><th>Zone</th><th>Dates</th><th>Status</th><th>Actions</th></tr>
+                      </thead>
+                      <tbody>
+                        {allCompanyPasses.map(p => {
+                          const worker = workers.find(w => w.id === p.workerId);
+                          return (
+                            <tr key={p.id}>
+                              <td><div className="cell-mono cell-secondary">#{p.id.slice(-6)}</div></td>
+                              <td><div className="cell-primary">{worker?.name || 'Unknown'}</div></td>
+                              <td><span className="zone-badge">{p.zoneLevel}</span></td>
+                              <td><div className="cell-secondary">{p.startDate} – {p.endDate}</div></td>
+                              <td><StatusPill status={p.status} /></td>
+                              <td>
+                                <button type="button" className="btn-action" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }} onClick={() => setSelectedPass(p)}>View Details</button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right Column / Forms */}
+          {view !== 'verify' && (
+            <div>
+              {/* Dashboard View: Live Scoped Entrance Logs */}
+              {view === 'dashboard' && (
+                <div className="log-console-panel">
+                  <div className="log-console-header">
+                    <div className="log-live-dot" />
+                    <span className="log-console-label">Facility Entrance Logs</span>
+                  </div>
+                  <div className="log-console-body" style={{ height: 380 }}>
+                    {logs.filter(l => l.companyName === currentCompany?.name).length === 0 ? (
+                      <div className="log-empty">No entrance events recorded for your workers.</div>
+                    ) : (
+                      logs.filter(l => l.companyName === currentCompany?.name).map(log => (
+                        <div key={log.id} className="log-line">
+                          <span className="log-ts">[{log.timestamp}]</span>
+                          <span className={log.action === 'check_in' ? 'log-entry-text' : 'log-exit-text'}>
+                            {log.action === 'check_in' ? 'CHECK-IN' : 'CHECK-OUT'}
+                          </span>
+                          <span className="log-name">{log.workerName}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Supervisors View: Register New Supervisor */}
+              {view === 'supervisors' && (
+                <div className="form-panel">
+                  <div className="form-panel-header">
+                    <div className="form-panel-title">Add Approved Supervisor</div>
+                    <div className="form-panel-desc">Register a new company supervisor. They will be immediately available.</div>
+                  </div>
+                  <div className="form-panel-body">
+                    <form onSubmit={handleAddSupervisor} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      <div className="field-group">
+                        <label>Full Name *</label>
+                        <input type="text" placeholder="e.g. Robert Downey" value={sName} onChange={e => setSName(e.target.value)} required />
+                      </div>
+                      <div className="field-group">
+                        <label>Email Address *</label>
+                        <input type="email" placeholder="robert@company.com" value={sEmail} onChange={e => setSEmail(e.target.value)} required />
+                      </div>
+                      <div className="field-group">
+                        <label>Phone Number</label>
+                        <input type="text" placeholder="+1 555-0100" value={sPhone} onChange={e => setSPhone(e.target.value)} />
+                      </div>
+                      <div className="field-group">
+                        <label>Profile Photo</label>
+                        <div className="photo-upload-zone">
+                          {sPhoto ? (
+                            <div className="photo-upload-preview-wrap">
+                              <img src={sPhoto} className="photo-upload-preview" alt="Preview" />
+                              <button type="button" className="photo-upload-remove-btn" onClick={() => setSPhoto('')}>&times;</button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="photo-upload-text">
+                                <strong>Click to upload</strong> or drag and drop
+                              </div>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>PNG, JPG or GIF</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="photo-upload-input"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => setSPhoto(reader.result);
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <button type="submit" className="btn-primary">Add Supervisor</button>
+                      {sMsg && <div className="form-feedback-success">{sMsg}</div>}
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Register New Worker */}
+              {(!view || view === 'workers') && (
+                <div className="form-panel" style={{ marginBottom: 20 }}>
+                  <div className="form-panel-header">
+                    <div className="form-panel-title">Register New Worker</div>
+                    <div className="form-panel-desc">New workers require profile verification before gate pass requests.</div>
+                  </div>
+                  <div className="form-panel-body">
+                    <form onSubmit={handleAddWorker} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      <div className="fields-row">
+                        <div className="field-group">
+                          <label>Full Name *</label>
+                          <input type="text" placeholder="John Smith" value={wName} onChange={e => setWName(e.target.value)} required />
+                        </div>
+                        <div className="field-group">
+                          <label>Approved Supervisor *</label>
+                          <select value={wSupervisor} onChange={e => setWSupervisor(e.target.value)} required>
+                            <option value="">Choose Supervisor</option>
+                            {approvedSupervisors.map(s => (
+                              <option key={s.id} value={s.name}>{s.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="fields-row">
+                        <div className="field-group">
+                          <label>Email Address</label>
+                          <input type="email" placeholder="john@vendor.com" value={wEmail} onChange={e => setWEmail(e.target.value)} />
+                        </div>
+                        <div className="field-group">
+                          <label>Phone Number</label>
+                          <input type="text" placeholder="+1 555-1234" value={wPhone} onChange={e => setWPhone(e.target.value)} />
+                        </div>
+                      </div>
+                      <div className="field-group">
+                        <label>Profile Photo</label>
+                        <div className="photo-upload-zone">
+                          {wPhoto ? (
+                            <div className="photo-upload-preview-wrap">
+                              <img src={wPhoto} className="photo-upload-preview" alt="Preview" />
+                              <button type="button" className="photo-upload-remove-btn" onClick={() => setWPhoto('')}>&times;</button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="photo-upload-text">
+                                <strong>Click to upload</strong> or drag and drop
+                              </div>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>PNG, JPG or GIF</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="photo-upload-input"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => setWPhoto(reader.result);
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <button type="submit" className="btn-primary">Register Worker</button>
+                      {wMsg && <div className="form-feedback-success">{wMsg}</div>}
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Request Gate Pass */}
+              {view === 'passes' && (
+                <div className="form-panel" style={{ marginBottom: 20 }}>
+                  <div className="form-panel-header">
+                    <div className="form-panel-title">Request Gate Pass</div>
+                    <div className="form-panel-desc">Only verified workers can be selected for a gate pass request.</div>
+                  </div>
+                  <div className="form-panel-body">
+                    <form onSubmit={handleRequestPass} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      <div className="field-group">
+                        <label style={{ fontSize: '0.88rem', fontWeight: 600, color: '#475569' }}>Select Workers * (Select multiple)</label>
+                        <div style={{
+                          border: '1.5px solid #cbd5e1', borderRadius: '8px',
+                          padding: '12px', background: '#f8fafc',
+                          maxHeight: '140px', overflowY: 'auto',
+                          display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px'
+                        }}>
+                          {verifiedWorkers.length === 0 ? (
+                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>No verified workers registered yet.</div>
+                          ) : (
+                            verifiedWorkers.map(w => {
+                              const isChecked = passWorkerIds.includes(w.id);
+                              return (
+                                <label key={w.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, color: '#0f172a' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => {
+                                      if (isChecked) {
+                                        setPassWorkerIds(prev => prev.filter(id => id !== w.id));
+                                      } else {
+                                        setPassWorkerIds(prev => [...prev, w.id]);
+                                      }
+                                    }}
+                                    style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                                  />
+                                  <span>{w.name}</span>
+                                </label>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="fields-row">
+                        <div className="field-group">
+                          <label>Designated Supervisor *</label>
+                          <select value={passSupervisor} onChange={e => setPassSupervisor(e.target.value)} required>
+                            <option value="">Select Supervisor</option>
+                            {approvedSupervisors.map(s => (
+                              <option key={s.id} value={s.name}>{s.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="field-group">
+                          <label>Access Zone *</label>
+                          <select value={passZone} onChange={e => setPassZone(e.target.value)}>
+                            <option value="Zone A - Warehouse Floor">Zone A - Warehouse Floor</option>
+                            <option value="Zone B - Cargo Loading">Zone B - Cargo Loading</option>
+                            <option value="Zone C - Administration">Zone C - Administration</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="fields-row">
+                        <div className="field-group">
+                          <label>Start Date *</label>
+                          <input type="date" value={passStartDate} onChange={e => setPassStartDate(e.target.value)} required />
+                        </div>
+                        <div className="field-group">
+                          <label>End Date *</label>
+                          <input type="date" value={passEndDate} onChange={e => setPassEndDate(e.target.value)} required />
+                        </div>
+                      </div>
+                      <div className="fields-row">
+                        <div className="field-group">
+                          <label>Shift Start</label>
+                          <input type="time" value={passStartTime} onChange={e => setPassStartTime(e.target.value)} />
+                        </div>
+                        <div className="field-group">
+                          <label>Shift End</label>
+                          <input type="time" value={passEndTime} onChange={e => setPassEndTime(e.target.value)} />
+                        </div>
+                      </div>
+                      <div className="field-group">
+                        <label>Purpose of Visit *</label>
+                        <input type="text" placeholder="e.g. Server rack repair" value={passPurpose} onChange={e => setPassPurpose(e.target.value)} required />
+                      </div>
+                      <button type="submit" className="btn-primary">Submit Pass Request</button>
+                      {passMsg && <div className="form-feedback-success">{passMsg}</div>}
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
-      </div>
       ) : (
         /* 3PL Fleet Management View (Full Width) */
         <div style={{ marginTop: 20 }}>
@@ -1085,12 +1230,12 @@ export default function CompanyAdminDashboard({ view }) {
                     </div>
                   </div>
                 ) : sub3PLs.map(carrier => {
-                  const carrierTrucks     = trucks.filter(t => t.companyId === carrier.id);
-                  const carrierDrivers    = drivers.filter(d => d.companyId === carrier.id);
+                  const carrierTrucks = trucks.filter(t => t.companyId === carrier.id);
+                  const carrierDrivers = drivers.filter(d => d.companyId === carrier.id);
                   const carrierDeliveries = deliveries.filter(d => d.companyId === carrier.id);
-                  const approvedTrucks    = carrierTrucks.filter(t => t.status === 'approved').length;
-                  const approvedDrivers   = carrierDrivers.filter(d => d.status === 'approved').length;
-                  const activeDispatches  = carrierDeliveries.filter(d => d.status === 'checked_in').length;
+                  const approvedTrucks = carrierTrucks.filter(t => t.status === 'approved').length;
+                  const approvedDrivers = carrierDrivers.filter(d => d.status === 'approved').length;
+                  const activeDispatches = carrierDeliveries.filter(d => d.status === 'checked_in').length;
 
                   return (
                     <div key={carrier.id} style={{ marginBottom: 28 }}>
@@ -1227,6 +1372,7 @@ export default function CompanyAdminDashboard({ view }) {
           workers={workers}
           supervisors={supervisors}
           companies={companies}
+          passes={passes}
         />
       )}
       {selectedWorker && (

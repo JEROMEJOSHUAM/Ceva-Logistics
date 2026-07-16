@@ -116,13 +116,12 @@ export default function GuardMobileApp() {
             <option value="">-- Click to Scan QR Code --</option>
             {approvablePasses.map(p => {
               const worker = workers.find(w => w.id === p.workerId);
-              const companyName = companies.find(c => c.id === p.companyId)?.name || 'Vendor';
               const stateLabel = !p.checkedIn 
                 ? 'Check-In' 
                 : (!p.checkedOut ? 'Check-Out' : 'Already Left');
               return (
                 <option key={p.id} value={p.id}>
-                  Scan: {worker ? worker.name : 'Unknown'} ({companyName}) - [{stateLabel}]
+                  {worker ? worker.name : 'Unknown'} ({stateLabel})
                 </option>
               );
             })}
@@ -162,7 +161,7 @@ export default function GuardMobileApp() {
                     <div className="pass-info-grid">
                       <div className="pass-info-item">
                         <span>ZONE</span>
-                        <strong>{scanResult.pass.zoneLevel.split(' - ')[0]}</strong>
+                        <strong>{scanResult.pass.zoneLevel}</strong>
                       </div>
                       <div className="pass-info-item">
                         <span>HOURS</span>
@@ -301,12 +300,25 @@ export default function GuardMobileApp() {
                 const company = companies.find(c => c.id === p.companyId);
                 const hasAlert = alerts.some(a => a.passId === p.id && !a.resolved);
                 return (
-                  <div key={p.id} className={`onsite-card ${hasAlert ? 'alert-border' : ''}`}>
-                    <img src={worker?.photo} alt="" className="onsite-avatar" />
-                    <div className="onsite-details">
-                      <strong>{worker?.name}</strong>
-                      <span className="vendor-lbl">{company?.name}</span>
-                      <span className="zone-lbl">{p.zoneLevel.split(' - ')[0]} | shift end {p.endTime}</span>
+                  <div key={p.id} className={`onsite-card ${hasAlert ? 'alert-border' : ''}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                      {worker?.photo ? (
+                        <img src={worker.photo} alt="" className="onsite-avatar" />
+                      ) : (
+                        <div style={{
+                          width: '44px', height: '44px', borderRadius: '50%',
+                          background: '#e2e8f0', display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', fontWeight: 600, color: '#475569',
+                          fontSize: '1rem', flexShrink: 0
+                        }}>
+                          {worker?.name?.[0]?.toUpperCase() || 'W'}
+                        </div>
+                      )}
+                      <div className="onsite-details" style={{ flex: 1 }}>
+                        <strong>{worker?.name}</strong>
+                        <span className="vendor-lbl">{company?.name}</span>
+                        <span className="zone-lbl">{p.zoneLevel} | shift end {p.endTime}</span>
+                      </div>
                     </div>
                     <div className="onsite-actions">
                       <button 
@@ -314,7 +326,7 @@ export default function GuardMobileApp() {
                         onClick={() => triggerOverstay(p.id)}
                         disabled={hasAlert}
                       >
-                        ⚠️ {hasAlert ? 'Alarming' : 'Simulate Overstay'}
+                        {hasAlert ? '⚠️ Alarming' : 'Simulate Overstay'}
                       </button>
                     </div>
                   </div>

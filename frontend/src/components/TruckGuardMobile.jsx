@@ -134,7 +134,7 @@ export default function TruckGuardMobile() {
               const company = companies.find(c => c.id === d.companyId);
               return (
                 <option key={d.id} value={d.id}>
-                  Scan Plate: {truck?.plate} ({company?.name}) - [{d.type.toUpperCase()}]
+                  Scan: {truck?.plate} ({d.type.toUpperCase()})
                 </option>
               );
             })}
@@ -155,8 +155,7 @@ export default function TruckGuardMobile() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
                 <button 
-                  className={`btn-simulate-alert ${ocrVerified ? 'triggered' : ''}`}
-                  style={{ backgroundColor: ocrVerified ? 'var(--color-success)' : 'var(--ceva-blue)', color: 'white', borderColor: ocrVerified ? 'var(--color-success)' : 'var(--ceva-blue)' }}
+                  className={ocrVerified ? "inspector-btn-success" : "inspector-btn-primary"}
                   onClick={simulateOCRScan}
                   disabled={ocrVerified}
                 >
@@ -241,8 +240,7 @@ export default function TruckGuardMobile() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.7rem' }}>Seal #: {currentDelivery.sealNumber}</span>
                     <button 
-                      className={`btn-simulate-alert ${sealVerified ? 'triggered' : ''}`}
-                      style={{ backgroundColor: sealVerified ? 'var(--color-success)' : 'var(--ceva-blue)', color: 'white', borderColor: sealVerified ? 'var(--color-success)' : 'var(--ceva-blue)', fontSize: '0.65rem', padding: '4px 8px' }}
+                      className={sealVerified ? "inspector-btn-success" : "inspector-btn-primary"}
                       onClick={simulateSealVerify}
                       disabled={sealVerified}
                     >
@@ -297,23 +295,21 @@ export default function TruckGuardMobile() {
                         </button>
                       </div>
                     </div>
-
                     {/* Checkout verification section */}
                     {isSelectedCheckout ? (
-                      <div className="scan-result-card" style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '10px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '12px', marginTop: '8px' }}>
-                        <div className="scan-status-badge entry" style={{ alignSelf: 'center', backgroundColor: '#e11d48' }}>
-                          OUTBOUND INSPECTION: #{d.id.slice(-5)}
+                      <div className="scan-result-card slide-in" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+                        <div className="scan-status-badge outbound" style={{ alignSelf: 'center' }}>
+                          OUTBOUND INSPECTION ACTIVE: #{d.id.slice(-5)}
                         </div>
 
                         {/* Step 1: Plate OCR Check */}
-                        <div className="scan-details" style={{ backgroundColor: '#ffffff', padding: '8px' }}>
+                        <div className="scan-details">
                           <strong>1. Exit Plate Check</strong>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', fontSize: '0.75rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', fontSize: '0.78rem' }}>
                             <span>Plate: <strong>{truck?.plate}</strong></span>
                             <button 
                               type="button"
-                              className={`btn-simulate-alert ${exitOcrVerified ? 'triggered' : ''}`}
-                              style={{ backgroundColor: exitOcrVerified ? 'var(--color-success)' : 'var(--ceva-blue)', color: 'white', borderColor: exitOcrVerified ? 'var(--color-success)' : 'var(--ceva-blue)', fontSize: '0.65rem', padding: '4px 8px' }}
+                              className={exitOcrVerified ? "inspector-btn-success" : "inspector-btn-primary"}
                               onClick={() => setExitOcrVerified(true)}
                               disabled={exitOcrVerified}
                             >
@@ -322,27 +318,27 @@ export default function TruckGuardMobile() {
                           </div>
                         </div>
 
-                        {/* Step 2: Evidence Photos checklist */}
-                        <div className="scan-details" style={{ backgroundColor: '#ffffff', padding: '8px' }}>
+                        {/* Step 2: Outbound Evidence Photos */}
+                        <div className="scan-details">
                           <strong>2. Outbound Photos</strong>
-                          <div className="inspection-photo-grid" style={{ gap: '6px', marginTop: '6px' }}>
-                            <div className={`photo-placeholder-box ${hasCapturedExitPhotos ? 'success' : ''}`} style={{ padding: '4px', height: '60px', fontSize: '0.6rem' }}>
+                          <div className="inspection-photo-grid">
+                            <div className={`photo-placeholder-box ${hasCapturedExitPhotos ? 'success' : ''}`}>
                               {hasCapturedExitPhotos ? (
-                                <img src={d.containerPhoto || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=100'} className="photo-thumb-mini" style={{ width: '32px', height: '32px' }} alt="" />
+                                <img src={d.containerPhoto || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=100'} className="photo-thumb-mini" alt="" />
                               ) : (
                                 <span>🚛 Exit Container</span>
                               )}
                             </div>
-                            <div className={`photo-placeholder-box ${hasCapturedExitPhotos ? 'success' : ''}`} style={{ padding: '4px', height: '60px', fontSize: '0.6rem' }}>
+                            <div className={`photo-placeholder-box ${hasCapturedExitPhotos ? 'success' : ''}`}>
                               {hasCapturedExitPhotos ? (
-                                <img src={driver?.photo} className="photo-thumb-mini" style={{ width: '32px', height: '32px' }} alt="" />
+                                <img src={driver?.photo} className="photo-thumb-mini" alt="" />
                               ) : (
                                 <span>👤 Driver Profile</span>
                               )}
                             </div>
-                            <div className={`photo-placeholder-box ${hasCapturedExitPhotos ? 'success' : ''}`} style={{ padding: '4px', height: '60px', fontSize: '0.6rem' }}>
+                            <div className={`photo-placeholder-box ${hasCapturedExitPhotos ? 'success' : ''}`}>
                               {hasCapturedExitPhotos ? (
-                                <img src={d.baselineSealPhoto || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=100'} className="photo-thumb-mini" style={{ width: '32px', height: '32px' }} alt="" />
+                                <img src={d.baselineSealPhoto || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=100'} className="photo-thumb-mini" alt="" />
                               ) : (
                                 <span>📦 Exit Seal</span>
                               )}
@@ -351,7 +347,7 @@ export default function TruckGuardMobile() {
                           <button 
                             type="button"
                             className="mobile-btn" 
-                            style={{ marginTop: '8px', fontSize: '0.7rem', padding: '6px' }} 
+                            style={{ marginTop: '8px', fontSize: '0.75rem' }} 
                             onClick={() => {
                               setHasCapturedExitPhotos(true);
                               setExitPhotoVerified(true);
@@ -364,20 +360,20 @@ export default function TruckGuardMobile() {
 
                         {/* Step 3: Biometric Driver ID Verification */}
                         {hasCapturedExitPhotos && (
-                          <div className="scan-details" style={{ backgroundColor: '#ffffff', padding: '8px' }}>
-                            <strong>3. Driver Biometric Verification</strong>
-                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '6px' }}>
-                              <div style={{ textAlign: 'center', flex: '1' }}>
-                                <img src={driver?.photo} style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover' }} alt="" />
-                                <div style={{ fontSize: '0.5rem' }}>Baseline</div>
+                          <div className="scan-details">
+                            <strong>3. Biometric Driver ID Verification</strong>
+                            <div className="biometric-verif-row">
+                              <div className="biometric-avatar-wrap">
+                                <img src={driver?.photo} alt="" />
+                                <span>Baseline</span>
                               </div>
-                              <span style={{ fontSize: '0.8rem' }}>➡️</span>
-                              <div style={{ textAlign: 'center', flex: '1' }}>
-                                <img src={driver?.photo} style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', filter: 'hue-rotate(60deg)' }} alt="" />
-                                <div style={{ fontSize: '0.5rem' }}>Exit Captured</div>
+                              <span style={{ fontSize: '1rem' }}>➡️</span>
+                              <div className="biometric-avatar-wrap">
+                                <img src={driver?.photo} style={{ filter: 'hue-rotate(60deg)' }} alt="" />
+                                <span>Exit Captured</span>
                               </div>
-                              <div style={{ flex: '2', fontSize: '0.65rem', color: 'var(--color-success)', fontWeight: 'bold' }}>
-                                ✅ Driver Match: 98%
+                              <div className="biometric-result">
+                                ✅ Driver Match: 98% Correct (Biometric Verified)
                               </div>
                             </div>
                           </div>
@@ -385,39 +381,41 @@ export default function TruckGuardMobile() {
 
                         {/* Step 4: Seal Tamper Comparison verification */}
                         {hasCapturedExitPhotos && (
-                          <div className="scan-details" style={{ backgroundColor: '#ffffff', padding: '8px' }}>
+                          <div className="scan-details">
                             <strong>4. Outbound Seal Tamper Check</strong>
-                            <div className="seal-images-comparison" style={{ marginTop: '6px' }}>
-                              <div className="comparison-box">
-                                <img src={d.baselineSealPhoto || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=100'} style={{ height: '50px' }} alt="" />
-                                <span style={{ fontSize: '0.55rem' }}>Entry Baseline</span>
+                            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Compare baseline seal image from entry with exit seal photo.</p>
+                            <div className="seal-match-verification-card">
+                              <div className="seal-images-comparison">
+                                <div className="comparison-box">
+                                  <img src={d.baselineSealPhoto || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=100'} alt="" />
+                                  <span>Entry Baseline</span>
+                                </div>
+                                <div className="comparison-box">
+                                  <img src={d.baselineSealPhoto || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=100'} style={{ filter: 'contrast(1.1) brightness(0.95)' }} alt="" />
+                                  <span>Exit Live</span>
+                                </div>
                               </div>
-                              <div className="comparison-box">
-                                <img src={d.baselineSealPhoto || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=100'} style={{ filter: 'contrast(1.1) brightness(0.95)', height: '50px' }} alt="" />
-                                <span style={{ fontSize: '0.55rem' }}>Exit Live</span>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.7rem' }}>Seal #: {d.sealNumber}</span>
+                                <button 
+                                  type="button"
+                                  className={exitSealVerified ? "inspector-btn-success" : "inspector-btn-primary"}
+                                  onClick={() => setExitSealVerified(true)}
+                                  disabled={exitSealVerified}
+                                >
+                                  {exitSealVerified ? '✅ Seal Matched' : 'Verify Outbound Seal'}
+                                </button>
                               </div>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-                              <span style={{ fontSize: '0.65rem' }}>Seal #: {d.sealNumber}</span>
-                              <button 
-                                type="button"
-                                className={`btn-simulate-alert ${exitSealVerified ? 'triggered' : ''}`}
-                                style={{ backgroundColor: exitSealVerified ? 'var(--color-success)' : 'var(--ceva-blue)', color: 'white', borderColor: exitSealVerified ? 'var(--color-success)' : 'var(--ceva-blue)', fontSize: '0.65rem', padding: '4px 8px' }}
-                                onClick={() => setExitSealVerified(true)}
-                                disabled={exitSealVerified}
-                              >
-                                {exitSealVerified ? '✅ Seal Matched' : 'Verify Outbound Seal'}
-                              </button>
                             </div>
                           </div>
                         )}
 
                         {/* Actions */}
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
                           <button 
                             type="button"
                             className="mobile-btn btn-danger" 
-                            style={{ margin: 0, padding: '6px', fontSize: '0.7rem', flex: 1 }}
+                            style={{ margin: 0, padding: '10px', fontSize: '0.82rem', flex: 1 }}
                             onClick={() => handleCheckOutSubmit(d.id)}
                             disabled={!exitOcrVerified || !exitPhotoVerified || !exitSealVerified}
                           >
@@ -426,7 +424,7 @@ export default function TruckGuardMobile() {
                           <button 
                             type="button"
                             className="mobile-btn btn-close" 
-                            style={{ margin: 0, padding: '6px', fontSize: '0.7rem', backgroundColor: '#e2e8f0', color: 'var(--text-primary)', flex: 1 }}
+                            style={{ margin: 0, padding: '10px', fontSize: '0.82rem', flex: 1 }}
                             onClick={() => setCheckoutDeliveryId('')}
                           >
                             Cancel
@@ -436,7 +434,7 @@ export default function TruckGuardMobile() {
                     ) : (
                       <button 
                         className="mobile-btn btn-danger" 
-                        style={{ padding: '6px', fontSize: '0.7rem', marginTop: '4px' }}
+                        style={{ padding: '10px', fontSize: '0.82rem', marginTop: '4px' }}
                         onClick={() => handleCheckoutSelect(d.id)}
                       >
                         Log Depart/Exit Gate

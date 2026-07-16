@@ -128,8 +128,12 @@ export const SystemProvider = ({ children }) => {
     return data ? mapWorker(data) : null;
   };
 
-  const verifyWorker = async (workerId, approve) => {
-    const { error } = await supabase.from('workers').update({ status: approve ? 'approved' : 'rejected' }).eq('id', workerId);
+  const verifyWorker = async (workerId, approve, supervisorName) => {
+    const updateData = { status: approve ? 'approved' : 'rejected' };
+    if (approve && supervisorName) {
+      updateData.supervisor_name = supervisorName;
+    }
+    const { error } = await supabase.from('workers').update(updateData).eq('id', workerId);
     if (error) console.error('verifyWorker:', error.message);
     await loadWorkers();
   };
@@ -186,6 +190,18 @@ export const SystemProvider = ({ children }) => {
       await supabase.from('gate_passes').update({ status: 'rejected' }).eq('id', passId);
     }
     await loadPasses();
+  };
+
+  const approvePassVendorBulk = async (passIds, approve) => {
+    const newStatus = approve ? 'pending_ceva' : 'rejected';
+    const { error } = await supabase.from('gate_passes').update({ status: newStatus }).in('id', passIds);
+    if (error) console.error('approvePassVendorBulk:', error.message);
+    await loadPasses();
+  };
+
+  const approvePassCevaBulk = async (passIds, approve) => {
+    // Run all approvals in parallel to ensure HMAC signing is completed for each pass
+    await Promise.all(passIds.map(passId => approvePassCeva(passId, approve)));
   };
 
 
@@ -349,7 +365,7 @@ export const SystemProvider = ({ children }) => {
       activeHeadcount, activeTruckHeadcount, dbLoading,
       registerCompany, verifyCompany,
       registerWorker, verifyWorker, deleteWorker,
-      requestPass, approvePassVendor, approvePassCeva, checkInPass, checkOutPass,
+      requestPass, approvePassVendor, approvePassCeva, approvePassVendorBulk, approvePassCevaBulk, checkInPass, checkOutPass,
       registerTruck, verifyTruck,
       registerDriver, verifyDriver,
       assignDelivery, checkInTruck, checkOutTruck, triggerTruckOverstay,
