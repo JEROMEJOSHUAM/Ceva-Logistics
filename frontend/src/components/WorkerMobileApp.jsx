@@ -7,12 +7,14 @@ export default function WorkerMobileApp() {
     workers, 
     registerWorker, 
     passes, 
-    requestPass 
+    requestPass,
+    supervisors
   } = useSystem();
 
   // Active Worker Session State
   const [activeWorkerId, setActiveWorkerId] = useState('');
   const [activeTab, setActiveTab] = useState('pass'); // 'pass' or 'register'
+  const [passSupervisorName, setPassSupervisorName] = useState('');
 
   // New Worker Form (Mobile App Mode)
   const [name, setName] = useState('');
@@ -20,6 +22,7 @@ export default function WorkerMobileApp() {
   const [supervisor, setSupervisor] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [photo, setPhoto] = useState('');
   const [regMsg, setRegMsg] = useState('');
 
   // Pass Request Form
@@ -47,22 +50,23 @@ export default function WorkerMobileApp() {
       setRegMsg('Please select a verified company.');
       return;
     }
-    if (!name || !supervisor) {
-      setRegMsg('Name and supervisor are required.');
+    if (!name) {
+      setRegMsg('Name is required.');
       return;
     }
     const newW = registerWorker(
       name, 
       companyId, 
-      supervisor, 
+      'Pending Assignment', 
       email || `${name.toLowerCase().replace(/\s+/g, '')}@vendor.com`, 
-      phone || '+1 555-4321'
+      phone || '+1 555-4321',
+      photo
     );
     setActiveWorkerId(newW.id);
     setName('');
-    setSupervisor('');
     setEmail('');
     setPhone('');
+    setPhoto('');
     setRegMsg('Profile submitted! Waiting for Company Admin verification.');
     setActiveTab('pass');
     setTimeout(() => setRegMsg(''), 4000);
@@ -80,8 +84,9 @@ export default function WorkerMobileApp() {
       return;
     }
     
-    requestPass(activeWorkerId, zone, startDate, endDate, startTime, endTime, purpose);
+    requestPass(activeWorkerId, zone, startDate, endDate, startTime, endTime, purpose, passSupervisorName);
     setPurpose('');
+    setPassSupervisorName('');
     setPassMsg('Pass request submitted! Dual-approval workflow started.');
     setTimeout(() => setPassMsg(''), 4000);
   };
@@ -168,16 +173,7 @@ export default function WorkerMobileApp() {
                   ))}
                 </select>
               </div>
-              <div className="mobile-input-group">
-                <label>Supervisor</label>
-                <input 
-                  type="text" 
-                  placeholder="Supervisor Name" 
-                  value={supervisor} 
-                  onChange={(e) => setSupervisor(e.target.value)} 
-                  required
-                />
-              </div>
+
               <div className="mobile-input-group">
                 <label>Email</label>
                 <input 
@@ -195,6 +191,37 @@ export default function WorkerMobileApp() {
                   value={phone} 
                   onChange={(e) => setPhone(e.target.value)} 
                 />
+              </div>
+              <div className="mobile-input-group">
+                <label>Profile Photo</label>
+                <div className="mobile-photo-upload-zone">
+                  {photo ? (
+                    <div className="photo-upload-preview-wrap" style={{ width: 64, height: 64 }}>
+                      <img src={photo} className="photo-upload-preview" style={{ width: 64, height: 64 }} alt="Preview" />
+                      <button type="button" className="photo-upload-remove-btn" onClick={() => setPhoto('')}>&times;</button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mobile-photo-upload-text">
+                        <strong>Tap to upload photo</strong>
+                      </div>
+                      <span style={{ fontSize: '0.65rem', color: '#64748b' }}>PNG or JPG</span>
+                    </>
+                  )}
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="photo-upload-input" 
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => setPhoto(reader.result);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </div>
               </div>
               <button type="submit" className="mobile-btn">Submit Profile</button>
               {regMsg && <p className="mobile-feedback">{regMsg}</p>}
@@ -231,25 +258,39 @@ export default function WorkerMobileApp() {
                         
                         <div className="pass-body">
                           <div className="pass-photo-wrap">
-                            <img src={currentWorker.photo} alt={currentWorker.name} className="pass-avatar" />
+                            {currentWorker.photo ? (
+                              <img src={currentWorker.photo} alt={currentWorker.name} className="pass-avatar" />
+                            ) : (
+                              <div className="pass-avatar-placeholder">
+                                {currentWorker.name?.[0]?.toUpperCase() || 'W'}
+                              </div>
+                            )}
                             <div className="pass-name">
                               <h4>{currentWorker.name}</h4>
                               <p className="pass-vendor">{companies.find(c => c.id === currentWorker.companyId)?.name}</p>
                             </div>
                           </div>
 
-                          {/* Interactive QR Simulation */}
-                          <div className="qr-box-sim">
-                            <div className="qr-lines"></div>
-                            {/* Stylized QR Grid */}
-                            <div className="qr-grid-pattern">
-                              <div className="qr-corner top-left"></div>
-                              <div className="qr-corner top-right"></div>
-                              <div className="qr-corner bottom-left"></div>
-                              <div className="qr-dot center-1"></div>
-                              <div className="qr-dot center-2"></div>
-                            </div>
-                          </div>
+                          {/* Real QR Code Generated dynamically */}
+                          {(() => {
+                            const shortPassId = activeApprovedPass.id.slice(-6);
+                            const qrPayload = `CEVA LOGISTICS GATE PASS
+-------------------------
+Pass ID: #${shortPassId}
+Name: ${currentWorker.name}
+Company: ${companies.find(c => c.id === currentWorker.companyId)?.name || 'Vendor'}
+Zone: ${activeApprovedPass.zoneLevel.split(' - ')[0]}
+Validity: ${activeApprovedPass.startDate} to ${activeApprovedPass.endDate}
+Hours: ${activeApprovedPass.startTime.slice(0, 5)} - ${activeApprovedPass.endTime.slice(0, 5)}
+-------------------------
+STATUS: VERIFIED ENTRY APPROVED`;
+                            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrPayload)}`;
+                            return (
+                              <div className="qr-box-sim">
+                                <img src={qrUrl} alt="Gate Pass QR Code" style={{ width: 116, height: 116, display: 'block' }} />
+                              </div>
+                            );
+                          })()}
 
                           <div className="pass-info-grid">
                             <div className="pass-info-item">
@@ -258,7 +299,7 @@ export default function WorkerMobileApp() {
                             </div>
                             <div className="pass-info-item">
                               <span>HOURS</span>
-                              <strong>{activeApprovedPass.startTime} - {activeApprovedPass.endTime}</strong>
+                              <strong>{activeApprovedPass.startTime.slice(0, 5)} - {activeApprovedPass.endTime.slice(0, 5)}</strong>
                             </div>
                             <div className="pass-info-item" style={{ gridColumn: 'span 2' }}>
                               <span>VALID DATES</span>
@@ -296,9 +337,29 @@ export default function WorkerMobileApp() {
                             >
                               <option value="Zone A - Warehouse Floor">Zone A - Warehouse Floor</option>
                               <option value="Zone B - Cargo Loading">Zone B - Cargo Loading</option>
-                              <option value="Zone C - Admin Office">Zone C - Admin Office</option>
+                               <option value="Zone C - Admin Office">Zone C - Admin Office</option>
                             </select>
                           </div>
+                          
+                          {/* Designated Supervisor Dropdown */}
+                          <div className="mobile-input-group">
+                            <label>Designated Supervisor</label>
+                            <select 
+                              value={passSupervisorName} 
+                              onChange={(e) => setPassSupervisorName(e.target.value)}
+                              className="mobile-select"
+                              required
+                            >
+                              <option value="">-- Select Approved Supervisor --</option>
+                              {supervisors
+                                .filter(s => s.companyId === currentWorker?.companyId && s.status === 'approved')
+                                .map(s => (
+                                  <option key={s.id} value={s.name}>{s.name} ({s.email})</option>
+                                ))
+                              }
+                            </select>
+                          </div>
+
                           <div className="mobile-input-group">
                             <label>Start Date</label>
                             <input 
